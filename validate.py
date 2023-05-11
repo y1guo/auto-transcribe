@@ -1,6 +1,14 @@
 import os, json
 from colorama import Fore
-from utils import AUDIO_DIR, EXCLUDELIST, VOCAL_DIR, TRANSCRIPT_DIR, get_duration, msg
+from utils import (
+    VIDEO_DIR_LIST,
+    AUDIO_DIR,
+    EXCLUDELIST,
+    VOCAL_DIR,
+    TRANSCRIPT_DIR,
+    get_duration,
+    msg,
+)
 
 
 def highlight(value: int | float, operand: str, threshold: float) -> str:
@@ -20,7 +28,9 @@ if __name__ == "__main__":
         exclude_list = f.read().splitlines()
         for file in exclude_list:
             base_name = os.path.splitext(file)[0]
-            exclude[base_name] = get_duration(os.path.join(AUDIO_DIR, file))
+            duration = get_duration(os.path.join(AUDIO_DIR, file))
+            if duration:
+                exclude[base_name] = duration
 
     # print exclude info
     msg(
@@ -29,20 +39,54 @@ if __name__ == "__main__":
         f"Found {len(exclude)} excluded files. Maximum duration: {highlight(max(exclude.values()), '>', 30)} s",
     )
 
+    # get video info
+    video = {}
+    for dir in VIDEO_DIR_LIST:
+        for file in os.listdir(dir):
+            if file.endswith(".mp4") or file.endswith(".flv"):
+                base_name = os.path.splitext(file)[0]
+                duration = get_duration(os.path.join(dir, file))
+                if duration:
+                    video[base_name] = duration
+
     # get audio info
     audio = {}
     for file in os.listdir(AUDIO_DIR):
         base_name = os.path.splitext(file)[0]
         if file.endswith(".m4a") and base_name not in exclude:
             bare_name = base_name.split("_part_")[0]
-            audio[bare_name] = get_duration(os.path.join(AUDIO_DIR, file))
+            duration = get_duration(os.path.join(AUDIO_DIR, file))
+            if duration:
+                if bare_name in audio:
+                    audio[bare_name] += duration
+                else:
+                    audio[bare_name] = duration
+
+    # compare video and audio
+    diff_va = set(video.keys()) - set(audio.keys())
+    diff_av = set(audio.keys()) - set(video.keys())
+    msg(
+        "Validate",
+        "Audio",
+        f"Found {highlight(len(diff_va), '>', 0)} video without audio, {highlight(len(diff_av), '>', 0)} audio without video",
+    )
+    diff_duration = {
+        _: abs(video[_] - audio[_]) for _ in set(video.keys()) & set(audio.keys())
+    }
+    msg(
+        "Validate",
+        "Audio",
+        f"Maximum duration difference: {highlight(max(diff_duration.values()), '>', 1)} s: {Fore.CYAN}{max(diff_duration, key=diff_duration.get)}",
+    )
 
     # get vocal info
     vocal = {}
     for file in os.listdir(VOCAL_DIR):
         if file.endswith(".mp3"):
             base_name = os.path.splitext(file)[0]
-            vocal[base_name] = get_duration(os.path.join(VOCAL_DIR, file))
+            duration = get_duration(os.path.join(VOCAL_DIR, file))
+            if duration:
+                vocal[base_name] = duration
 
     # compare audio and vocal
     diff_av = set(audio.keys()) - set(vocal.keys())
@@ -77,8 +121,11 @@ if __name__ == "__main__":
         "Transcript",
         f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal",
     )
-    msg(
-        "Validate",
-        "Transcript",
-        f"Minimum transcript length: {highlight(min(transcript.values()), '<', 1)} characters: {Fore.CYAN}{min(transcript, key=transcript.get)}",
-    )
+    # msg(
+    #     "Validate",
+    #     "Transcript",
+    #     f"Minimum transcript length: {highlight(min(transcript.values()), '<', 1)} characters: {Fore.CYAN}{min(transcript, key=transcript.get)}",
+    # )
+
+    # ending message
+    msg("Validate", "Sleep", "")

@@ -39,7 +39,7 @@ sudo apt install ffmpeg # from apt
 -   Monitor the workflow and sanity check
 
     ```bash
-    bash keep_running.sh "python validate.py"
+    bash keep_running.sh "python validate.py" 60
     ```
 
 ## Notes

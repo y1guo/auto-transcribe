@@ -1,4 +1,4 @@
-import os, json, time
+import os, json, time, subprocess
 from colorama import Fore
 
 
@@ -25,13 +25,23 @@ EXCLUDELIST = os.path.join(AUDIO_DIR, "exclude.txt")
 # utility functions
 
 
-def get_duration(file: str) -> float:
-    duration = float(
-        os.popen(
-            f'ffprobe -i "{file}" -show_entries format=duration -v quiet -of csv="p=0"'
-        ).read()
+def get_duration(file: str) -> float | None:
+    output = subprocess.run(
+        [
+            "ffprobe",
+            "-i",
+            file,
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
+        ],
+        capture_output=True,
     )
-    return duration
+    # print stderr
+    if output.returncode == 0:
+        duration = float(output.stdout)
+        return duration
 
 
 def msg(sender: str, action: str, message: str, error: bool = False) -> None:

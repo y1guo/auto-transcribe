@@ -8,6 +8,10 @@ def extract_vocal(file: str) -> None:
     in_file = os.path.join(AUDIO_DIR, file)
     out_file = os.path.join(VOCAL_DIR, f"{bare_name}.mp3")
     tmp_file = os.path.join(TMP_DIR, "htdemucs", base_name, "vocals.wav")
+    duration = get_duration(in_file)
+    # skip if audio has not finished writing
+    if not duration:
+        return
     # skip if vocal already exists
     if os.path.exists(out_file):
         return
@@ -44,7 +48,6 @@ def extract_vocal(file: str) -> None:
     # move or merge vocal from tmp dir to vocal dir
     if "_part_" in base_name:
         # skip if it is not the last part
-        duration = get_duration(in_file)
         if round(duration) == 3600:
             return
         # skip if not all parts are present
