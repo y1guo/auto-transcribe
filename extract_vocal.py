@@ -7,7 +7,8 @@ def extract_vocal(file: str) -> None:
     bare_name = base_name.split("_part_")[0]
     in_file = os.path.join(AUDIO_DIR, file)
     out_file = os.path.join(VOCAL_DIR, f"{bare_name}.mp3")
-    tmp_file = os.path.join(TMP_DIR, "htdemucs", base_name, "vocals.wav")
+    tmp_mp3 = os.path.join(TMP_DIR, os.path.basename(out_file))
+    tmp_wav = os.path.join(TMP_DIR, "htdemucs", base_name, "vocals.wav")
     duration = get_duration(in_file)
     # skip if audio has not finished writing
     if not duration:
@@ -22,8 +23,8 @@ def extract_vocal(file: str) -> None:
         if file in exclude_list:
             return
     # extract vocal to tmp if vocal does not exist or is broken
-    if not os.path.exists(tmp_file) or not get_duration(tmp_file):
-        msg("Vocal", "Extracting", f"{base_name}.wav")
+    if not os.path.exists(tmp_wav) or not get_duration(tmp_wav):
+        msg("Vocal", "Extracting", os.path.join(base_name, "vocals.wav"))
         output = subprocess.run(
             [
                 "demucs",
@@ -39,12 +40,17 @@ def extract_vocal(file: str) -> None:
         )
         # succeeded
         if output.returncode == 0:
-            msg("Vocal", "Extracted", f"{base_name}.wav")
+            msg("Vocal", "Extracted", os.path.join(base_name, "vocals.wav"))
         # failed, add to exclude list
         else:
             with open(EXCLUDELIST, "a") as f:
                 f.write(f"{file}\n")
-            msg("Vocal", "Failed Extract", f"{base_name}.wav", error=True)
+            msg(
+                "Vocal",
+                "Failed Extract",
+                os.path.join(base_name, "vocals.wav"),
+                error=True,
+            )
     # move or merge vocal from tmp dir to vocal dir
     if "_part_" in base_name:
         # skip if it is not the last part
@@ -66,6 +72,11 @@ def extract_vocal(file: str) -> None:
         with open(TMP_FILE, "w") as f:
             for part_file in part_files:
                 f.write(f"file '{part_file}'\n")
+        msg(
+            "Vocal",
+            "Merging",
+            os.path.basename(out_file),
+        )
         output = subprocess.run(
             [
                 "ffmpeg",
@@ -78,32 +89,39 @@ def extract_vocal(file: str) -> None:
                 "-ab",
                 "320k",
                 "-y",
-                out_file,
+                tmp_mp3,
             ],
             capture_output=True,
         )
+        os.rename(tmp_mp3, out_file)
         # succeeded
         if output.returncode == 0:
             # remove tmp dir
             for part_file in part_files:
                 shutil.rmtree(os.path.dirname(part_file))
-            msg("Vocal", "Merged", f"{bare_name}.mp3")
+            msg("Vocal", "Merged", os.path.basename(out_file))
         # failed
         else:
-            msg("Vocal", "Failed Merge", f"{bare_name}.mp3", error=True)
+            msg("Vocal", "Failed Merge", os.path.basename(out_file), error=True)
     else:
+        msg(
+            "Vocal",
+            "Transcoding",
+            os.path.basename(out_file),
+        )
         output = subprocess.run(
-            ["ffmpeg", "-i", tmp_file, "-ab", "320k", "-y", out_file],
+            ["ffmpeg", "-i", tmp_wav, "-ab", "320k", "-y", tmp_mp3],
             capture_output=True,
         )
+        os.rename(tmp_mp3, out_file)
         # succeeded
         if output.returncode == 0:
             # remove tmp dir
-            shutil.rmtree(os.path.dirname(tmp_file))
-            msg("Vocal", "Transcoded", f"{bare_name}.mp3")
+            shutil.rmtree(os.path.dirname(tmp_wav))
+            msg("Vocal", "Transcoded", os.path.basename(out_file))
         # failed
         else:
-            msg("Vocal", "Failed Transcode", f"{bare_name}.mp3", error=True)
+            msg("Vocal", "Failed Transcode", os.path.basename(out_file), error=True)
 
 
 if __name__ == "__main__":

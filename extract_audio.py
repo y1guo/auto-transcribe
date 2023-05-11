@@ -3,7 +3,7 @@
 # Audio files that are already in the directory are skipped.
 
 import os, time, subprocess
-from utils import VIDEO_DIR_LIST, AUDIO_DIR, PART_DURATION, get_duration, msg
+from utils import VIDEO_DIR_LIST, AUDIO_DIR, PART_DURATION, TMP_DIR, get_duration, msg
 
 
 def extract_audio(dir: str, file: str) -> None:
@@ -24,6 +24,7 @@ def extract_audio(dir: str, file: str) -> None:
             # extract audio if it does not exist or is broken
             if not os.path.exists(out_file) or not get_duration(out_file):
                 msg("Audio", "Extracting", os.path.basename(out_file))
+                tmp_file = os.path.join(TMP_DIR, os.path.basename(out_file))
                 output = subprocess.run(
                     [
                         "ffmpeg",
@@ -36,11 +37,12 @@ def extract_audio(dir: str, file: str) -> None:
                         "-vn",
                         "-acodec",
                         "copy",
-                        out_file,
+                        tmp_file,
                         "-y",
                     ],
                     capture_output=True,
                 )
+                os.rename(tmp_file, out_file)
                 # succeeded
                 if output.returncode == 0:
                     msg("Audio", "Extracted", os.path.basename(out_file))
@@ -57,10 +59,12 @@ def extract_audio(dir: str, file: str) -> None:
         # extract audio if it does not exist or is broken
         if not os.path.exists(out_file) or not get_duration(out_file):
             msg("Audio", "Extracting", os.path.basename(out_file))
+            tmp_file = os.path.join(TMP_DIR, os.path.basename(out_file))
             output = subprocess.run(
-                ["ffmpeg", "-i", in_file, "-vn", "-acodec", "copy", out_file, "-y"],
+                ["ffmpeg", "-i", in_file, "-vn", "-acodec", "copy", tmp_file, "-y"],
                 capture_output=True,
             )
+            os.rename(tmp_file, out_file)
             # succeeded
             if output.returncode == 0:
                 msg("Audio", "Extracted", os.path.basename(out_file))

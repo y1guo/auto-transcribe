@@ -7,9 +7,10 @@ def transcribe(in_file: str, out_file: str) -> None:
     # get device id
     cpu_name = multiprocessing.current_process().name
     cpu_id = int(cpu_name.split("-")[1]) - 1
+    gpu_id = torch.cuda.device_count() - cpu_id - 1
     try:
         # load model
-        model = whisper.load_model("large-v2", device=f"cuda:{cpu_id}")
+        model = whisper.load_model("large-v2", device=f"cuda:{gpu_id}")
         # transcribe
         result = model.transcribe(in_file, language="zh")
         # convert to simplified chinese
