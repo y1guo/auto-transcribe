@@ -73,10 +73,19 @@ if __name__ == "__main__":
     diff_duration = {
         _: abs(video[_] - audio[_]) for _ in set(video.keys()) & set(audio.keys())
     }
+    top_two = [
+        (k, diff_duration[k])
+        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
+    ][:2]
     msg(
         "Validate",
         "Audio",
-        f"Maximum duration difference: {highlight(max(diff_duration.values()), '>', 1)} s: {Fore.CYAN}{max(diff_duration, key=diff_duration.get)}",
+        f"Maximum duration difference: {highlight(top_two[0][1], '>', 1)} s: {Fore.CYAN}{top_two[0][0]}",
+    )
+    msg(
+        "Validate",
+        "Audio",
+        f"2nd max duration difference: {highlight(top_two[1][1], '>', 1)} s: {Fore.CYAN}{top_two[1][0]}",
     )
 
     # get vocal info
@@ -99,10 +108,19 @@ if __name__ == "__main__":
     diff_duration = {
         _: abs(audio[_] - vocal[_]) for _ in set(audio.keys()) & set(vocal.keys())
     }
+    top_two = [
+        (k, diff_duration[k])
+        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
+    ][:2]
     msg(
         "Validate",
         "Vocal",
-        f"Maximum duration difference: {highlight(max(diff_duration.values()), '>', 1)} s: {Fore.CYAN}{max(diff_duration, key=diff_duration.get)}",
+        f"Maximum duration difference: {highlight(top_two[0][1], '>', 1)} s: {Fore.CYAN}{top_two[0][0]}",
+    )
+    msg(
+        "Validate",
+        "Vocal",
+        f"2nd max duration difference: {highlight(top_two[1][1], '>', 1)} s: {Fore.CYAN}{top_two[1][0]}",
     )
 
     # get transcript info

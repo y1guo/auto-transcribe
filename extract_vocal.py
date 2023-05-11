@@ -12,8 +12,8 @@ def extract_vocal(file: str) -> None:
     # skip if audio has not finished writing
     if not duration:
         return
-    # skip if vocal already exists
-    if os.path.exists(out_file):
+    # skip if vocal already exists and is not broken
+    if os.path.exists(out_file) and get_duration(out_file):
         return
     # skip if in exclude list
     if os.path.exists(EXCLUDELIST):
@@ -21,8 +21,8 @@ def extract_vocal(file: str) -> None:
             exclude_list = f.read().splitlines()
         if file in exclude_list:
             return
-    # extract vocal to tmp if vocal does not exist
-    if not os.path.exists(tmp_file):
+    # extract vocal to tmp if vocal does not exist or is broken
+    if not os.path.exists(tmp_file) or not get_duration(tmp_file):
         msg("Vocal", "Extracting", f"{base_name}.wav")
         output = subprocess.run(
             [
@@ -50,7 +50,7 @@ def extract_vocal(file: str) -> None:
         # skip if it is not the last part
         if round(duration) == 3600:
             return
-        # skip if not all parts are present
+        # skip if not all parts are present and not broken
         part_number = int(base_name.split("_part_")[1])
         part_files = [
             os.path.join(
@@ -59,7 +59,7 @@ def extract_vocal(file: str) -> None:
             for i in range(part_number)
         ]
         for part_file in part_files:
-            if not os.path.exists(part_file):
+            if not os.path.exists(part_file) or not get_duration(part_file):
                 return
         # merge vocal
         TMP_FILE = os.path.join(TMP_DIR, "filelist.txt")

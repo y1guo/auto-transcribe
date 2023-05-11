@@ -10,7 +10,7 @@ def extract_audio(dir: str, file: str) -> None:
     base_name = os.path.splitext(file)[0]
     in_file = os.path.join(dir, file)
     duration = get_duration(in_file)
-    # skip if audio has not finished writing
+    # skip if video has not finished writing
     if not duration:
         return
     # if the video is longer than 1 hour, split it into 1 hour parts
@@ -21,8 +21,8 @@ def extract_audio(dir: str, file: str) -> None:
             for i in range(num_part)
         ]
         for i, out_file in enumerate(part_files):
-            # extract audio if it does not exist
-            if not os.path.exists(out_file):
+            # extract audio if it does not exist or is broken
+            if not os.path.exists(out_file) or not get_duration(out_file):
                 msg("Audio", "Extracting", os.path.basename(out_file))
                 output = subprocess.run(
                     [
@@ -54,8 +54,8 @@ def extract_audio(dir: str, file: str) -> None:
                     )
     else:
         out_file = os.path.join(AUDIO_DIR, f"{base_name}.m4a")
-        # extract audio if it does not exist
-        if not os.path.exists(out_file):
+        # extract audio if it does not exist or is broken
+        if not os.path.exists(out_file) or not get_duration(out_file):
             msg("Audio", "Extracting", os.path.basename(out_file))
             output = subprocess.run(
                 ["ffmpeg", "-i", in_file, "-vn", "-acodec", "copy", out_file, "-y"],
