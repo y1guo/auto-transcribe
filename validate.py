@@ -36,7 +36,8 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Audio",
-        f"Found {len(exclude)} excluded files. Maximum duration: {highlight(max(exclude.values()), '>', 30)} s",
+        f"{len(exclude)} excluded. Maximum duration: {highlight(max(exclude.values()), '>', 30)} s:",
+        f"{max(exclude, key=exclude.get)}",
     )
 
     # get video info
@@ -80,12 +81,14 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Audio",
-        f"Maximum duration difference: {highlight(top_two[0][1], '>', 1)} s: {Fore.CYAN}{top_two[0][0]}",
+        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
+        f"{top_two[0][0]}",
     )
     msg(
         "Validate",
         "Audio",
-        f"2nd max duration difference: {highlight(top_two[1][1], '>', 1)} s: {Fore.CYAN}{top_two[1][0]}",
+        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
+        f"{top_two[1][0]}",
     )
 
     # get vocal info
@@ -115,12 +118,14 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Vocal",
-        f"Maximum duration difference: {highlight(top_two[0][1], '>', 1)} s: {Fore.CYAN}{top_two[0][0]}",
+        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
+        f"{top_two[0][0]}",
     )
     msg(
         "Validate",
         "Vocal",
-        f"2nd max duration difference: {highlight(top_two[1][1], '>', 1)} s: {Fore.CYAN}{top_two[1][0]}",
+        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
+        f"{top_two[1][0]}",
     )
 
     # get transcript info
@@ -129,7 +134,12 @@ if __name__ == "__main__":
         if file.endswith(".json"):
             base_name = os.path.splitext(file)[0]
             with open(os.path.join(TRANSCRIPT_DIR, file), "r") as f:
-                transcript[base_name] = len(json.load(f)["text"])
+                segments = json.load(f)["segments"]
+                if len(segments) == 0:
+                    duration = 0
+                else:
+                    duration = segments[-1]["end"] - segments[0]["start"]
+                transcript[base_name] = duration
 
     # compare vocal and transcript
     diff_vt = set(vocal.keys()) - set(transcript.keys())
@@ -139,11 +149,26 @@ if __name__ == "__main__":
         "Transcript",
         f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal",
     )
-    # msg(
-    #     "Validate",
-    #     "Transcript",
-    #     f"Minimum transcript length: {highlight(min(transcript.values()), '<', 1)} characters: {Fore.CYAN}{min(transcript, key=transcript.get)}",
-    # )
+    diff_duration = {
+        _: abs(vocal[_] - transcript[_])
+        for _ in set(vocal.keys()) & set(transcript.keys())
+    }
+    top_two = [
+        (k, diff_duration[k])
+        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
+    ][:2]
+    msg(
+        "Validate",
+        "Transcript",
+        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
+        f"{top_two[0][0]}",
+    )
+    msg(
+        "Validate",
+        "Transcript",
+        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
+        f"{top_two[1][0]}",
+    )
 
     # ending message
-    msg("Validate", "Sleep", "")
+    msg("Validate", "Done")

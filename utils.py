@@ -1,4 +1,4 @@
-import os, json, time, subprocess
+import os, json, time, ffmpeg
 from colorama import Fore
 
 
@@ -26,31 +26,28 @@ EXCLUDELIST = os.path.join(AUDIO_DIR, "exclude.txt")
 
 
 def get_duration(file: str) -> float | None:
-    output = subprocess.run(
-        [
-            "ffprobe",
-            "-i",
-            file,
-            "-show_entries",
-            "format=duration",
-            "-of",
-            "csv=p=0",
-        ],
-        capture_output=True,
-    )
-    # print stderr
-    if output.returncode == 0:
-        duration = float(output.stdout)
+    output = ffmpeg.probe(file)
+    if output["streams"]:
+        duration = float(output["format"]["duration"])
         return duration
 
 
-def msg(sender: str, action: str, message: str, error: bool = False) -> None:
-    if error:
-        color = Fore.RED
-    else:
-        color = Fore.GREEN
+def msg(
+    sender: str, action: str, message: str = "", file: str = "", error: bool = False
+) -> None:
+    color = Fore.RED if error else Fore.GREEN
     print(
         f'{color}[{time.strftime("%m-%d %H:%M:%S", time.localtime())} {sender}]',
-        f"{Fore.YELLOW}{action:<16}",
+        f"{Fore.YELLOW}{action:<12}",
         f"{Fore.RESET}{message}",
+        f"{Fore.CYAN}{file}",
     )
+
+
+def get_video_file(bare_name: str) -> str:
+    """find the video by bare name"""
+    for dir in VIDEO_DIR_LIST:
+        for file in os.listdir(dir):
+            if file.startswith(bare_name):
+                video_file = os.path.join(dir, file)
+                return video_file
