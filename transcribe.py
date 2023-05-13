@@ -60,7 +60,7 @@ class Worker:
             msg(f" GPU {self.gpu_id} ", "Loading Model")
             self.model = whisper.load_model("large-v2", device=f"cuda:{self.gpu_id}")
             msg(f" GPU {self.gpu_id} ", "Model Loaded")
-        result = self.model.transcribe(vocal, language="zh", verbose=False)
+        result = self.model.transcribe(vocal, language="zh", verbose=None)
         # convert to simplified chinese
         result["text"] = self.converter.convert(result["text"])
         for segment in result["segments"]:

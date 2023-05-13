@@ -121,6 +121,21 @@ def valid(base_name: str, target: str) -> bool:
     wav = os.path.join(DEMUCS_DIR, f"{base_name}_vocals.wav")
     vocal = os.path.join(VOCAL_DIR, f"{bare_name}.mp3")
     transcript = os.path.join(TRANSCRIPT_DIR, f"{bare_name}.json")
+    VALIDLIST = os.path.join(TMP_DIR, f"valid_{target}.txt")
+    # refresh valid list every hour
+    if time.time() % 3600 < 60:
+        try:
+            os.remove(VALIDLIST)
+        except:
+            pass
+    # check if already validated
+    try:
+        with open(VALIDLIST) as f:
+            valid_list = f.read().splitlines()
+            if bare_name in valid_list:
+                return True
+    except FileNotFoundError:
+        pass
     # case-wise parameters
     if target in ["audio", "demucs"]:
         # audio and demucs compare to part duration
@@ -178,4 +193,8 @@ def valid(base_name: str, target: str) -> bool:
                         file=file,
                         error=True,
                     )
+    # add to valid list
+    with open(VALIDLIST, "a") as f:
+        f.write(bare_name + "\n")
+
     return True
