@@ -29,7 +29,7 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Audio",
-        f"{len(exclude)} excluded. Maximum duration: {highlight(max(exclude.values()), '>', 30)} s:",
+        f"{len(exclude)} excluded. Maximum duration: {highlight(max(exclude.values()), '>', 300)} s:",
         f"{max(exclude, key=exclude.get)}",
     )
 
@@ -57,8 +57,8 @@ if __name__ == "__main__":
                     audio[bare_name] = duration
 
     # compare video and audio
-    diff_va = set(video.keys()) - set(audio.keys())
-    diff_av = set(audio.keys()) - set(video.keys())
+    diff_va = set(video.keys()) - set(audio.keys()) - set(exclude.keys())
+    diff_av = (set(audio.keys()) | set(exclude.keys())) - set(video.keys())
     msg(
         "Validate",
         "Audio",
@@ -126,13 +126,7 @@ if __name__ == "__main__":
     for file in os.listdir(TRANSCRIPT_DIR):
         if file.endswith(".json"):
             base_name = os.path.splitext(file)[0]
-            with open(os.path.join(TRANSCRIPT_DIR, file), "r") as f:
-                segments = json.load(f)["segments"]
-                if len(segments) == 0:
-                    duration = 0
-                else:
-                    duration = segments[-1]["end"] - segments[0]["start"]
-                transcript[base_name] = duration
+            transcript[base_name] = get_duration(os.path.join(TRANSCRIPT_DIR, file))
 
     # compare vocal and transcript
     diff_vt = set(vocal.keys()) - set(transcript.keys())
@@ -153,13 +147,13 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Transcript",
-        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
+        f"Maximum duration diff {highlight(top_two[0][1], '>', 600)} s:",
         f"{top_two[0][0]}",
     )
     msg(
         "Validate",
         "Transcript",
-        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
+        f"2nd max duration diff {highlight(top_two[1][1], '>', 600)} s:",
         f"{top_two[1][0]}",
     )
 

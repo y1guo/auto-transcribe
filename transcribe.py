@@ -1,52 +1,47 @@
 import os, json, whisper, opencc, torch, time
-from multiprocessing import Process, Queue, Manager
+from multiprocessing import Process, Manager
 from utils import VOCAL_DIR, TRANSCRIPT_DIR, get_duration, msg, valid
 
 
 NUM_GPU = torch.cuda.device_count()
 
 
-class Package:
-    def __init__(self, message: str, data: any = None, sender: str = "") -> None:
-        self.message = message
-        self.data = data
-        self.sender = sender
-
-
 class Worker:
-    def __init__(self, gpu_id: int, queue_in: Queue, queue_out: Queue) -> None:
+    def __init__(self, gpu_id: int, current_task: list[tuple[str, str]]) -> None:
         self.gpu_id = gpu_id
-        self.queue_in = queue_in
-        self.queue_out = queue_out
+        self.current_task = current_task
         self.model = None
         self.converter = opencc.OpenCC("t2s.json")
 
     def __call__(self) -> None:
-        # msg(f" GPU {self.gpu_id} ", "Wait for 5 seconds to crash")
-        # time.sleep(5)
-        # raise Exception("Test Crash")
+        try:
+            self.main()
+        except Exception as e:
+            msg(f" GPU {self.gpu_id} ", "Crashed", repr(e), error=True)
+        except KeyboardInterrupt:
+            pass
+
+    def main(self) -> None:
         while True:
-            self.send(Package("ready"))
-            package = self.listen()
-            if package.data:
-                self.send(Package("onto", package.data))
-                vocal, transcript = package.data
+            task = self.current_task[self.gpu_id]
+            if task:
+                vocal, transcript = task
                 msg(f" GPU {self.gpu_id} ", "Xscribing", file=vocal)
                 start_time = time.time()
                 try:
                     self.transcribe(vocal, transcript)
-                except Exception as e:
+                except (Exception, KeyboardInterrupt) as e:
                     try:
                         os.remove(transcript)
                     except:
                         pass
-                    msg(
-                        f" GPU {self.gpu_id} ",
-                        "Xscribe Failed",
-                        repr(e),
-                        file=vocal,
-                        error=True,
-                    )
+                    if not isinstance(e, KeyboardInterrupt):
+                        msg(
+                            f" GPU {self.gpu_id} ",
+                            "Xscribe Crashed",
+                            file=vocal,
+                            error=True,
+                        )
                     raise
                 end_time = time.time()
                 speed = get_duration(vocal) / (end_time - start_time)
@@ -56,17 +51,8 @@ class Worker:
                     f"({speed:.0f}X)",
                     file=vocal,
                 )
-
-    def listen(self) -> Package:
-        """Wait for a package to arrive"""
-        package = self.queue_in.get()
-        # msg(f" GPU {self.gpu_id} ", "Received", package.message)
-        return package
-
-    def send(self, package: Package) -> None:
-        package.sender = str(self.gpu_id)
-        self.queue_out.put(package)
-        # msg(f" GPU {self.gpu_id} ", "Sent", package.message)
+                self.current_task[self.gpu_id] = None
+            time.sleep(5)
 
     def transcribe(self, vocal: str, transcript: str) -> None:
         # transcribe
@@ -85,38 +71,24 @@ class Worker:
 
 
 class Watcher:
-    def __init__(self, queue_in: Queue, queue_out: Queue) -> None:
-        self.queue_in = queue_in
-        self.queue_out = queue_out
-        self.current_task = {str(i): "init" for i in range(NUM_GPU)}
+    def __init__(self, current_task: list[tuple[str, str]]) -> None:
+        self.current_task = current_task
 
     def __call__(self):
+        try:
+            self.main()
+        except Exception as e:
+            msg("Watcher", "Crashed", repr(e), error=True)
+        except KeyboardInterrupt:
+            pass
+
+    def main(self) -> None:
         while True:
-            # update worker status
-            for package in self.receive():
-                if package.message == "onto":
-                    self.current_task[package.sender] = package.data
-                elif package.message == "ready":
-                    self.current_task[package.sender] = None
-            # send new task to an idle worker
-            for worker in self.current_task:
-                if not self.current_task[worker]:
-                    self.send(Package("task", self.new_task()))
-                    break
-            # allow some time for the worker to accept task
+            # set new tasks to idle workers
+            for id in range(len(self.current_task)):
+                if not self.current_task[id]:
+                    self.current_task[id] = self.new_task()
             time.sleep(5)
-
-    def receive(self) -> list[Package]:
-        """Grab all packages in queue, no waiting"""
-        packages = []
-        while not self.queue_in.empty():
-            packages.append(self.queue_in.get())
-            # msg("Watcher", "Received", packages[-1].message)
-        return packages
-
-    def send(self, package: Package) -> None:
-        self.queue_out.put(package)
-        # msg("Watcher", "Sent", package.message)
 
     def new_task(self) -> tuple[str, str] | None:
         for file in os.listdir(VOCAL_DIR):
@@ -129,29 +101,42 @@ class Watcher:
                 if (
                     valid(base_name, "vocal")
                     and not valid(base_name, "transcript")
-                    and task not in self.current_task.values()
+                    and task not in self.current_task
                 ):
                     return task
 
 
-if __name__ == "__main__":
+def main() -> None:
     msg("Xscribe", "Starting")
-    # init processes
-    m2w = Queue()
-    w2m = Queue()
-    processes = []
-    for i in range(NUM_GPU - 1, -1, -1):
-        processes.append(Process(target=Worker(i, m2w, w2m)))
-    processes.append(Process(target=Watcher(w2m, m2w)))
-    for p in processes:
-        p.start()
-    # wait for processes to finish
+    with Manager() as manager:
+        # init processes
+        current_task = manager.list([None] * NUM_GPU)
+        watcher = Process(target=Watcher(current_task))
+        watcher.start()
+        workers = []
+        for i in range(NUM_GPU):
+            current_task[i] = None
+            worker = Process(target=Worker(NUM_GPU - 1 - i, current_task))
+            worker.start()
+            workers.append(worker)
+        # wait for processes to finish
+        while True:
+            if not watcher.is_alive():
+                msg("Xscribe", "Restarting", "Watcher")
+                watcher = Process(target=Watcher(current_task))
+                watcher.start()
+            for i in range(NUM_GPU):
+                if not workers[i].is_alive():
+                    msg("Xscribe", "Restarting", f"GPU {NUM_GPU - 1 - i}")
+                    workers[i] = Process(target=Worker(NUM_GPU - 1 - i, current_task))
+                    workers[i].start()
+            time.sleep(5)
+
+
+if __name__ == "__main__":
     try:
-        for p in processes:
-            p.join()
-        # while True:
-        #     time.sleep(10)
+        main()
+    except Exception as e:
+        msg("Xscribe", "Crashed", repr(e), error=True)
     except KeyboardInterrupt:
-        for p in processes:
-            p.terminate()
-        msg("Xstribe", "Safe to Exit")
+        msg("Xscribe", "Safe to Exit")

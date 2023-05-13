@@ -41,7 +41,7 @@ bash keep_running.sh "python assenble_vocal.py"
 Transcribe with OpenAI `whisper`
 
 ```bash
-bash keep_running.sh "python transcribe.py"
+python transcribe.py
 ```
 
 Monitor the workflow and sanity check

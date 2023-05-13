@@ -68,7 +68,7 @@ def extract_vocal(file: str) -> None:
                 error=True,
             )
             # problem might be because there's no speech in the audio, exclude the audio if duration is small
-            if audio_duration < 60:
+            if audio_duration < 300:
                 with open(EXCLUDELIST, "a") as f:
                     f.write(f"{file}\n")
                 msg("Demucs", "Excluded", file=audio, error=True)
