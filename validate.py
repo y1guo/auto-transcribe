@@ -1,5 +1,4 @@
 import os, json
-from colorama import Fore
 from utils import (
     VIDEO_DIR_LIST,
     AUDIO_DIR,
@@ -8,29 +7,23 @@ from utils import (
     TRANSCRIPT_DIR,
     get_duration,
     msg,
+    highlight,
 )
-
-
-def highlight(value: int | float, operand: str, threshold: float) -> str:
-    condition = value > threshold if operand == ">" else value < threshold
-    if condition:
-        color = Fore.RED
-    else:
-        color = Fore.GREEN
-    msg = f"{value:.2f}" if isinstance(value, float) else str(value)
-    return f"{color}{msg}{Fore.RESET}"
 
 
 if __name__ == "__main__":
     # get exclude info
     exclude = {}
-    with open(EXCLUDELIST, "r") as f:
-        exclude_list = f.read().splitlines()
-        for file in exclude_list:
-            base_name = os.path.splitext(file)[0]
-            duration = get_duration(os.path.join(AUDIO_DIR, file))
-            if duration:
-                exclude[base_name] = duration
+    try:
+        with open(EXCLUDELIST, "r") as f:
+            exclude_list = f.read().splitlines()
+            for file in exclude_list:
+                base_name = os.path.splitext(file)[0]
+                duration = get_duration(os.path.join(AUDIO_DIR, file))
+                if duration:
+                    exclude[base_name] = duration
+    except FileNotFoundError:
+        pass
 
     # print exclude info
     msg(

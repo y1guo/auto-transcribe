@@ -18,7 +18,7 @@ sudo apt install ffmpeg # from apt
 
 ## Workflow
 
--   Extract audio from recordings and prepare for vocal extraction
+-   Extract audio from recordings and prepare for vocal extraction (slice into pieces of <= 1 hour)
 
     ```bash
     bash keep_running.sh "python extract_audio.py"
@@ -28,6 +28,12 @@ sudo apt install ffmpeg # from apt
 
     ```bash
     bash keep_running.sh "python extract_vocal.py"
+    ```
+
+-   Assemble pieces back into whole
+
+    ```bash
+    bash keep_running.sh "python assenble_vocal.py"
     ```
 
 -   Transcribe with OpenAI `whisper`
