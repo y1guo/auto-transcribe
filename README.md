@@ -50,6 +50,12 @@ Monitor the workflow and sanity check
 bash keep_running.sh "python summary.py" 60
 ```
 
+GUI search vocal by keywords
+
+```bash
+python launch.py
+```
+
 ## Notes
 
 -   Demucs VRAM issue
