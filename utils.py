@@ -122,17 +122,11 @@ def valid(base_name: str, target: str) -> bool:
     vocal = os.path.join(VOCAL_DIR, f"{bare_name}.mp3")
     transcript = os.path.join(TRANSCRIPT_DIR, f"{bare_name}.json")
     VALIDLIST = os.path.join(TMP_DIR, f"valid_{target}.txt")
-    # refresh valid list every hour
-    if time.time() % 3600 < 60:
-        try:
-            os.remove(VALIDLIST)
-        except:
-            pass
     # check if already validated
     try:
         with open(VALIDLIST) as f:
             valid_list = f.read().splitlines()
-            if bare_name in valid_list:
+            if base_name in valid_list:
                 return True
     except FileNotFoundError:
         pass
@@ -195,6 +189,6 @@ def valid(base_name: str, target: str) -> bool:
                     )
     # add to valid list
     with open(VALIDLIST, "a") as f:
-        f.write(bare_name + "\n")
+        f.write(base_name + "\n")
 
     return True

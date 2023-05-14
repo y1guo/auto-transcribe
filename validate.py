@@ -131,10 +131,11 @@ if __name__ == "__main__":
     # compare vocal and transcript
     diff_vt = set(vocal.keys()) - set(transcript.keys())
     diff_tv = set(transcript.keys()) - set(vocal.keys())
+    tot_duration = sum(vocal[k] for k in (set(vocal.keys()) & set(transcript.keys())))
     msg(
         "Validate",
         "Transcript",
-        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal",
+        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal, total {tot_duration / 3600:.1f} h",
     )
     diff_duration = {
         _: abs(vocal[_] - transcript[_])
