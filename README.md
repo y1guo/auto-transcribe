@@ -47,7 +47,7 @@ python transcribe.py
 Monitor the workflow and sanity check
 
 ```bash
-bash keep_running.sh "python validate.py" 60
+bash keep_running.sh "python summary.py" 60
 ```
 
 ## Notes

@@ -16,11 +16,23 @@ class TqdmOut(StringIO):
         super().write(s)
         line = self.getvalue().split("\r")[-1]
         try:
+            s2d = lambda s: sum(
+                int(n) * 60**i for i, n in enumerate(reversed(s.split(":")))
+            )
+            d2s = lambda d: ":".join(
+                [f"{int(d // 60**i % 60):02d}" for i in range(2, -1, -1)]
+            )
             percentage = line.split("%")[0]
-            estimate = line.split("[")[1].split(",")[0]
-            self.state["progress"] = f"[ {percentage:>3}% {estimate} ]"
-        except:
-            self.state["progress"] = "N/A"
+            finished = int(line.split("/")[0].split(" ")[-1]) // 100
+            total = int(line.split("/")[1].split(" ")[0]) // 100
+            elapsed = s2d(line.split("[")[1].split("<")[0])
+            speed = finished / elapsed
+            eta = (total - finished) / speed
+            self.state[
+                "progress"
+            ] = f"[{percentage:>3}% {speed:3.1f}X {d2s(elapsed)} <- {d2s(eta)}]"
+        except Exception as e:
+            self.state["progress"] = "n/a"
 
 
 class Worker:
@@ -73,6 +85,7 @@ class Worker:
                     file=vocal,
                 )
                 self.state["task"] = None
+                self.state["progress"] = "n/a"
             time.sleep(5)
 
     def transcribe(self, vocal: str, transcript: str) -> None:
@@ -138,7 +151,7 @@ def main() -> None:
     with Manager() as manager:
         # init processes
         states = manager.list(
-            [manager.dict({"task": None, "progress": "N/A"}) for _ in range(NUM_GPU)]
+            [manager.dict({"task": None, "progress": "n/a"}) for _ in range(NUM_GPU)]
         )
         watcher = Process(target=Watcher(states))
         workers = [Process(target=Worker(i, states[i])) for i in range(NUM_GPU)]
@@ -153,7 +166,9 @@ def main() -> None:
             msg(
                 "Xscribe",
                 "Progress",
-                "".join([f'{i:>6}{states[i]["progress"]:>20}' for i in range(NUM_GPU)]),
+                "".join(
+                    [f'GPU {i} {states[i]["progress"]:<34}' for i in range(NUM_GPU)]
+                ),
                 end="\r",
             )
             # keep processes alive

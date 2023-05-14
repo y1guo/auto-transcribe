@@ -49,11 +49,15 @@ def msg(
     end: str = "\n",
 ) -> None:
     color = Fore.RED if error else Fore.GREEN
-    print(
-        f'{color}[{time.strftime("%m-%d %H:%M:%S", time.localtime())} {sender}]',
+    w = os.get_terminal_size().columns
+    txt = [
+        f'{color}[{time.strftime("%m-%d %H:%M:%S", time.localtime())} {sender:>7}]',
         f"{Fore.YELLOW}{action:<12}",
         f"{Fore.RESET}{message}",
-        f"{Fore.CYAN}{os.path.basename(file)}",
+        f"{Fore.CYAN}{os.path.basename(file)}{Fore.RESET}",
+    ]
+    print(
+        f'{" ".join(txt):<{w}}',
         end=end,
     )
 
@@ -132,7 +136,9 @@ def valid(base_name: str, target: str) -> bool:
     try:
         with open(VALIDLIST) as f:
             valid_list = f.read().splitlines()
-            if base_name in valid_list:
+            if target in ["audio", "demucs"] and base_name in valid_list:
+                return True
+            if target in ["vocal", "transcript"] and bare_name in valid_list:
                 return True
     except FileNotFoundError:
         pass
@@ -186,6 +192,9 @@ def valid(base_name: str, target: str) -> bool:
                 os.remove(os.path.join(DEMUCS_DIR, file))
     # add to valid list
     with open(VALIDLIST, "a") as f:
-        f.write(base_name + "\n")
+        if target in ["audio", "demucs"]:
+            f.write(base_name + "\n")
+        elif target in ["vocal", "transcript"]:
+            f.write(bare_name + "\n")
 
     return True

@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # print exclude info
     msg(
-        "Validate",
+        "Summary",
         "Audio",
         f"{len(exclude)} excluded. Maximum duration: {highlight(max(exclude.values()), '>', 300)} s:",
         f"{max(exclude, key=exclude.get)}",
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     diff_va = set(video.keys()) - set(audio.keys()) - set(exclude.keys())
     diff_av = (set(audio.keys()) | set(exclude.keys())) - set(video.keys())
     msg(
-        "Validate",
+        "Summary",
         "Audio",
         f"Found {highlight(len(diff_va), '>', 0)} video without audio, {highlight(len(diff_av), '>', 0)} audio without video",
     )
@@ -72,13 +72,13 @@ if __name__ == "__main__":
         for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
     ][:2]
     msg(
-        "Validate",
+        "Summary",
         "Audio",
         f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
         f"{top_two[0][0]}",
     )
     msg(
-        "Validate",
+        "Summary",
         "Audio",
         f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
         f"{top_two[1][0]}",
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     diff_av = set(audio.keys()) - set(vocal.keys())
     diff_va = set(vocal.keys()) - set(audio.keys())
     msg(
-        "Validate",
+        "Summary",
         "Vocal",
         f"Found {highlight(len(diff_av), '>', 0)} audio without vocal, {highlight(len(diff_va), '>', 0)} vocal without audio",
     )
@@ -109,13 +109,13 @@ if __name__ == "__main__":
         for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
     ][:2]
     msg(
-        "Validate",
+        "Summary",
         "Vocal",
         f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
         f"{top_two[0][0]}",
     )
     msg(
-        "Validate",
+        "Summary",
         "Vocal",
         f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
         f"{top_two[1][0]}",
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     diff_tv = set(transcript.keys()) - set(vocal.keys())
     tot_duration = sum(vocal[k] for k in (set(vocal.keys()) & set(transcript.keys())))
     msg(
-        "Validate",
+        "Summary",
         "Transcript",
         f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal. Transcribed {tot_duration / 3600:.1f} h in total",
     )
@@ -146,17 +146,17 @@ if __name__ == "__main__":
         for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
     ][:2]
     msg(
-        "Validate",
+        "Summary",
         "Transcript",
         f"Maximum duration diff {highlight(top_two[0][1], '>', 600)} s:",
         f"{top_two[0][0]}",
     )
     msg(
-        "Validate",
+        "Summary",
         "Transcript",
         f"2nd max duration diff {highlight(top_two[1][1], '>', 600)} s:",
         f"{top_two[1][0]}",
     )
 
     # ending message
-    msg("Validate", "Done")
+    msg("Summary", "Done")
