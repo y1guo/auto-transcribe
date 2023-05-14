@@ -47,7 +47,7 @@ def assemble_vocal(file: str) -> None:
             os.remove(vocal)
         except:
             pass
-        if not isinstance(e, KeyboardInterrupt):
+        if isinstance(e, Exception):
             msg(
                 "Vocal",
                 "Assemble Failed",

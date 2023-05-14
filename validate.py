@@ -135,7 +135,7 @@ if __name__ == "__main__":
     msg(
         "Validate",
         "Transcript",
-        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal, total {tot_duration / 3600:.1f} h",
+        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal. Transcribed {tot_duration / 3600:.1f} h in total",
     )
     diff_duration = {
         _: abs(vocal[_] - transcript[_])

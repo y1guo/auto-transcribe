@@ -17,7 +17,7 @@ def extract_audio(video: str) -> None:
     try:
         audio_parts = get_audio_parts(bare_name)
     except Exception as e:
-        msg("Audio", "get_audio_parts", repr(e), file=video, error=True)
+        msg("Audio", "get_audio_parts()", repr(e), file=video, error=True)
         return
     # skip if all valid audio parts already exists (job)
     if all(
@@ -36,7 +36,7 @@ def extract_audio(video: str) -> None:
             os.remove(cache_audio)
         except:
             pass
-        if not isinstance(e, KeyboardInterrupt):
+        if isinstance(e, Exception):
             msg(
                 "Audio",
                 "Cache Failed",
@@ -64,7 +64,7 @@ def extract_audio(video: str) -> None:
                     os.remove(audio)
                 except:
                     pass
-                if not isinstance(e, KeyboardInterrupt):
+                if isinstance(e, Exception):
                     msg(
                         "Audio",
                         "Extract Failed",
@@ -85,14 +85,13 @@ def extract_audio(video: str) -> None:
         audio = audio_parts.keys()[0]
         try:
             os.rename(cache_audio, audio)
-        except (Exception, KeyboardInterrupt) as e:
-            if not isinstance(e, KeyboardInterrupt):
-                msg(
-                    "Audio",
-                    "Extract Failed",
-                    file=audio,
-                    error=True,
-                )
+        except Exception:
+            msg(
+                "Audio",
+                "Extract Failed",
+                file=audio,
+                error=True,
+            )
             raise
         msg("Audio", "Extracted", file=audio)
 

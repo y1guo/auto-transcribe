@@ -41,7 +41,12 @@ def get_duration(file: str) -> float:
 
 
 def msg(
-    sender: str, action: str, message: str = "", file: str = "", error: bool = False
+    sender: str,
+    action: str,
+    message: str = "",
+    file: str = "",
+    error: bool = False,
+    end: str = "\n",
 ) -> None:
     color = Fore.RED if error else Fore.GREEN
     print(
@@ -49,6 +54,7 @@ def msg(
         f"{Fore.YELLOW}{action:<12}",
         f"{Fore.RESET}{message}",
         f"{Fore.CYAN}{os.path.basename(file)}",
+        end=end,
     )
 
 
@@ -177,16 +183,7 @@ def valid(base_name: str, target: str) -> bool:
     if target == "vocal":
         for file in os.listdir(DEMUCS_DIR):
             if file.startswith(bare_name):
-                try:
-                    os.remove(os.path.join(DEMUCS_DIR, file))
-                except Exception as e:
-                    msg(
-                        "Assemble",
-                        "Clean Up Failed",
-                        repr(e),
-                        file=file,
-                        error=True,
-                    )
+                os.remove(os.path.join(DEMUCS_DIR, file))
     # add to valid list
     with open(VALIDLIST, "a") as f:
         f.write(base_name + "\n")

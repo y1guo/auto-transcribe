@@ -60,7 +60,7 @@ def extract_vocal(file: str) -> None:
                 os.remove(f)
             except:
                 pass
-        if not isinstance(e, KeyboardInterrupt):
+        if isinstance(e, Exception):
             msg(
                 "Demucs",
                 "Extract Failed",
