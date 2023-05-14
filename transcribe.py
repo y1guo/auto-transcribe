@@ -166,8 +166,8 @@ def main() -> None:
             msg(
                 "Xscribe",
                 "Progress",
-                "".join(
-                    [f'GPU {i} {states[i]["progress"]:<34}' for i in range(NUM_GPU)]
+                " ".join(
+                    [f'GPU {i} {states[i]["progress"]:<32}' for i in range(NUM_GPU)]
                 ),
                 end="\r",
             )

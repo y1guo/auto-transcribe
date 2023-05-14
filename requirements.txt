@@ -3,3 +3,4 @@ openai-whisper
 opencc
 colorama
 numba==0.56.4
+gradio

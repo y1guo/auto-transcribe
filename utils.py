@@ -15,7 +15,8 @@ VOCAL_DIR = os.path.join(OUT_DIR, "vocal")
 TMP_DIR = os.path.join(OUT_DIR, "tmp")
 DEMUCS_DIR = os.path.join(TMP_DIR, "htdemucs")
 TRANSCRIPT_DIR = os.path.join(OUT_DIR, "transcript")
-for dir in [AUDIO_DIR, VOCAL_DIR, TMP_DIR, TRANSCRIPT_DIR]:
+SLICE_DIR = os.path.join(TMP_DIR, "slice")
+for dir in [AUDIO_DIR, VOCAL_DIR, TMP_DIR, TRANSCRIPT_DIR, SLICE_DIR]:
     if not os.path.exists(dir):
         os.mkdir(dir)
 # other global variables
