@@ -1,14 +1,14 @@
-import os, sys, time, json, ffmpeg
+import os, sys, shutil, time, json, ffmpeg
 import gradio as gr
 import numpy as np
 import pandas as pd
-from utils import TRANSCRIPT_DIR, TMP_DIR, VOCAL_DIR, SLICE_DIR, msg, get_duration
+from utils import TRANSCRIPT_DIR, VOCAL_DIR, SLICE_DIR, FAVORITE_DIR, msg, get_duration
 
 
 MAX_SLICE_NUM = 7
 
 
-def load_transcript() -> None:
+def load_transcript() -> tuple[pd.DataFrame, str]:
     msg("Search", "Loading Transcripts")
     tmp = {k: [] for k in ["roomid", "basename", "start", "end", "text"]}
     for file in sorted(os.listdir(TRANSCRIPT_DIR)):
@@ -48,7 +48,6 @@ def search(transcript: pd.DataFrame, keyword: str, page: int = 1):
     processes = []
     # filter transcript leaving only those containing keyword
     df = transcript[transcript["text"].str.contains(keyword)].reset_index(drop=True)
-    print(repr(df))
     # regulate page number
     total_page = (len(df) - 1) // MAX_SLICE_NUM + 1
     page = max(1, min(page, total_page))
@@ -56,8 +55,8 @@ def search(transcript: pd.DataFrame, keyword: str, page: int = 1):
         row = df.iloc[i]
         # trim vocal
         vocal = os.path.join(VOCAL_DIR, f"{row['basename']}.mp3")
-        start = row["start"] - 1
-        end = row["end"] + 1
+        start = row["start"] - 3
+        end = row["end"] + 3
         slice = os.path.join(
             SLICE_DIR,
             f"{row['basename']}_{row['start']:.0f}_{row['end']:.0f}_{row['text']}.mp3",
@@ -98,25 +97,57 @@ def next_page(transcript: pd.DataFrame, keyword: str, page: int):
     return search(transcript, keyword, page + 1)
 
 
+def cache_pages(transcript: pd.DataFrame, keyword: str) -> None:
+    msg("Search", "Caching All Slices", "This may take a while")
+    _, total_page, *_ = search(transcript, keyword, 1)
+    msg("Search", "Cached", f"Page 1 of {total_page}")
+    for page in range(2, total_page + 1):
+        search(transcript, keyword, page)
+        msg("Search", "Cached", f"Page {page} of {total_page}")
+
+
+def save_to_favorite(slice: str):
+    favorite = os.path.join(FAVORITE_DIR, os.path.basename(slice))
+    try:
+        shutil.copy(slice, favorite)
+    except FileNotFoundError:
+        msg("Search", "Not Found", file=slice, error=True)
+        return f"Not Found {slice}"
+    else:
+        msg("Search", "Saved", file=favorite)
+        return f"Saved to {favorite}"
+
+
 if __name__ == "__main__":
-    with gr.Blocks() as app:
+    css = "footer {display: none !important;} .gradio-container {min-height: 0px !important;} .gradio-container {min-width: 0px !important;}"
+    with gr.Blocks(css=css) as app:
         # load transcripts
         transcript = gr.State(load_transcript()[0])
         # vocal slices
         labels = []
         slices = []
+        favorite = []
 
         gr.Markdown("""# <center>Auto-Transcribe</center>""")
         with gr.Row():
-            with gr.Column(scale=1):
+            with gr.Column():
+                reload = gr.Button(value="Reload Transcripts")
+                cache = gr.Button(value="Cache All Slices")
                 status = gr.Textbox(label="Status")
                 keyword = gr.Textbox(value="晚上好", label="Search For ... (Press Enter)")
-                reload = gr.Button(value="Reload Transcripts")
-            with gr.Column(scale=3):
+            with gr.Column(scale=100):
                 for i in range(MAX_SLICE_NUM):
-                    css = "footer {display: none !important;} .gradio-container {min-height: 0px !important;}"
                     labels.append(gr.Markdown())
-                    slices.append(gr.Audio(type="filepath", show_label=False))
+                    with gr.Row():
+                        with gr.Column(scale=100):
+                            slices.append(
+                                gr.Audio(
+                                    type="filepath",
+                                    show_label=False,
+                                    interactive=False,
+                                )
+                            )
+                        favorite.append(gr.Button(value="Save to Favorites"))
                 with gr.Row():
                     backward = gr.Button(value="< Previous")
                     page = gr.Number(value=0, label="Page", precision=0)
@@ -163,6 +194,11 @@ if __name__ == "__main__":
             ],
             [page, total_page, *labels, *slices],
         )
+
+        for i in range(MAX_SLICE_NUM):
+            favorite[i].click(save_to_favorite, slices[i], status)
+
+        cache.click(cache_pages, [transcript, keyword])
 
         reload.click(load_transcript, outputs=[transcript, status])
 
