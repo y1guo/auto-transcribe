@@ -42,17 +42,22 @@ def trim(vocal: str, start: float, end: float, slice: str):
     )
 
 
-def search(transcript: pd.DataFrame, keyword: str, page: int = 1):
+def search(transcript: pd.DataFrame, roomid: str, keyword: str, page: int = 1):
     labels = []
     slices = []
     processes = []
-    # filter transcript leaving only those containing keyword
-    df = transcript[transcript["text"].str.contains(keyword)].reset_index(drop=True)
+    # filter transcript by roomid
+    if roomid != "all":
+        transcript = transcript[transcript["roomid"] == roomid]
+    # filter transcript by keyword
+    transcript = transcript[transcript["text"].str.contains(keyword)].reset_index(
+        drop=True
+    )
     # regulate page number
-    total_page = (len(df) - 1) // MAX_SLICE_NUM + 1
+    total_page = (len(transcript) - 1) // MAX_SLICE_NUM + 1
     page = max(1, min(page, total_page))
-    for i in range((page - 1) * MAX_SLICE_NUM, len(df)):
-        row = df.iloc[i]
+    for i in range((page - 1) * MAX_SLICE_NUM, len(transcript)):
+        row = transcript.iloc[i]
         # trim vocal
         vocal = os.path.join(VOCAL_DIR, f"{row['basename']}.mp3")
         start = row["start"] - 3
@@ -89,20 +94,20 @@ def search(transcript: pd.DataFrame, keyword: str, page: int = 1):
     return page, total_page, *labels, *slices
 
 
-def prev_page(transcript: pd.DataFrame, keyword: str, page: int):
-    return search(transcript, keyword, page - 1)
+def prev_page(transcript: pd.DataFrame, roomid: str, keyword: str, page: int):
+    return search(transcript, roomid, keyword, page - 1)
 
 
-def next_page(transcript: pd.DataFrame, keyword: str, page: int):
-    return search(transcript, keyword, page + 1)
+def next_page(transcript: pd.DataFrame, roomid: str, keyword: str, page: int):
+    return search(transcript, roomid, keyword, page + 1)
 
 
-def cache_pages(transcript: pd.DataFrame, keyword: str) -> None:
+def cache_pages(transcript: pd.DataFrame, roomid: str, keyword: str) -> None:
     msg("Search", "Caching All Slices", "This may take a while")
-    _, total_page, *_ = search(transcript, keyword, 1)
+    _, total_page, *_ = search(transcript, roomid, keyword, 1)
     msg("Search", "Cached", f"Page 1 of {total_page}")
     for page in range(2, total_page + 1):
-        search(transcript, keyword, page)
+        search(transcript, roomid, keyword, page)
         msg("Search", "Cached", f"Page {page} of {total_page}")
 
 
@@ -122,7 +127,8 @@ if __name__ == "__main__":
     css = "footer {display: none !important;} .gradio-container {min-height: 0px !important;} .gradio-container {min-width: 0px !important;}"
     with gr.Blocks(css=css) as app:
         # load transcripts
-        transcript = gr.State(load_transcript()[0])
+        df, init_status = load_transcript()
+        transcript = gr.State(df)
         # vocal slices
         labels = []
         slices = []
@@ -133,7 +139,14 @@ if __name__ == "__main__":
             with gr.Column():
                 reload = gr.Button(value="Reload Transcripts")
                 cache = gr.Button(value="Cache All Slices")
-                status = gr.Textbox(label="Status")
+                status = gr.Textbox(
+                    value=init_status, label="Status", interactive=False
+                )
+                roomid = gr.Dropdown(
+                    choices=["all"] + sorted(df["roomid"].unique().tolist()),
+                    label="Room ID",
+                    value="all",
+                )
                 keyword = gr.Textbox(value="晚上好", label="Search For ... (Press Enter)")
             with gr.Column(scale=100):
                 for i in range(MAX_SLICE_NUM):
@@ -160,6 +173,7 @@ if __name__ == "__main__":
             search,
             [
                 transcript,
+                roomid,
                 keyword,
             ],
             [page, total_page, *labels, *slices],
@@ -169,6 +183,7 @@ if __name__ == "__main__":
             search,
             [
                 transcript,
+                roomid,
                 keyword,
                 page,
             ],
@@ -179,6 +194,7 @@ if __name__ == "__main__":
             prev_page,
             [
                 transcript,
+                roomid,
                 keyword,
                 page,
             ],
@@ -189,6 +205,7 @@ if __name__ == "__main__":
             next_page,
             [
                 transcript,
+                roomid,
                 keyword,
                 page,
             ],
@@ -198,7 +215,7 @@ if __name__ == "__main__":
         for i in range(MAX_SLICE_NUM):
             favorite[i].click(save_to_favorite, slices[i], status)
 
-        cache.click(cache_pages, [transcript, keyword])
+        cache.click(cache_pages, [transcript, roomid, keyword])
 
         reload.click(load_transcript, outputs=[transcript, status])
 
