@@ -78,7 +78,7 @@ def get_video(bare_name: str) -> str:
     """find the video path by bare name"""
     for dir in VIDEO_DIR_LIST:
         for file in os.listdir(dir):
-            if file.startswith(bare_name):
+            if file in [f"{bare_name}.mp4", f"{bare_name}.flv"]:
                 video = os.path.join(dir, file)
                 return video
     raise Exception(f"Can't find video for bare name: {bare_name}")

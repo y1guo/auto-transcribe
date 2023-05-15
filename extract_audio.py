@@ -18,6 +18,7 @@ def extract_audio(video: str) -> None:
         audio_parts = get_audio_parts(bare_name)
     except Exception as e:
         msg("Audio", "get_audio_parts()", repr(e), file=video, error=True)
+        raise
         return
     # skip if all valid audio parts already exists (job)
     if all(
@@ -82,7 +83,7 @@ def extract_audio(video: str) -> None:
                 file=audio,
             )
     else:
-        audio = audio_parts.keys()[0]
+        audio = list(audio_parts.keys())[0]
         try:
             os.rename(cache_audio, audio)
         except Exception:
@@ -107,3 +108,4 @@ if __name__ == "__main__":
         msg("Audio", "Safe to Exit")
     except Exception as e:
         msg("Audio", type(e).__name__, e, error=True)
+        raise
