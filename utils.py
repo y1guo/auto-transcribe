@@ -187,7 +187,11 @@ def valid(base_name: str, target: str) -> bool:
         # )
         return False
     # validated, clean up
-    if target == "vocal":
+    if target == "audio":
+        for file in os.listdir(TMP_DIR):
+            if file.startswith(bare_name):
+                os.remove(os.path.join(TMP_DIR, file))
+    elif target == "vocal":
         for file in os.listdir(DEMUCS_DIR):
             if file.startswith(bare_name):
                 os.remove(os.path.join(DEMUCS_DIR, file))

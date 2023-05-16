@@ -18,7 +18,6 @@ def extract_audio(video: str) -> None:
         audio_parts = get_audio_parts(bare_name)
     except Exception as e:
         msg("Audio", "get_audio_parts()", repr(e), file=video, error=True)
-        raise
         return
     # skip if all valid audio parts already exists (job)
     if all(
@@ -26,9 +25,9 @@ def extract_audio(video: str) -> None:
     ):
         return
     # extract cache
-    msg("Audio", "Caching", file=cache_audio)
-    start_time = time.time()
     try:
+        msg("Audio", "Caching", file=cache_audio)
+        start_time = time.time()
         ffmpeg.input(video).audio.output(cache_audio, acodec="copy").run(
             overwrite_output=True, quiet=True
         )
@@ -45,9 +44,10 @@ def extract_audio(video: str) -> None:
                 error=True,
             )
         raise
-    end_time = time.time()
-    speed = get_duration(cache_audio) / (end_time - start_time)
-    msg("Audio", "Cached", f"({speed:.0f}X)", file=cache_audio)
+    else:
+        end_time = time.time()
+        speed = get_duration(cache_audio) / (end_time - start_time)
+        msg("Audio", "Cached", f"({speed:.0f}X)", file=cache_audio)
     # extract audio
     if len(audio_parts) > 1:
         ss = 0
