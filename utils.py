@@ -50,16 +50,15 @@ def msg(
     error: bool = False,
     end: str = "\n",
 ) -> None:
+    # clear line
+    print(" " * os.get_terminal_size().columns, end="\r")
+    # print message
     color = Fore.RED if error else Fore.GREEN
-    w = os.get_terminal_size().columns
-    txt = [
-        f'{color}[{time.strftime("%m-%d %H:%M:%S", time.localtime())} {sender:>7}]',
-        f"{Fore.YELLOW}{action:<12}",
-        f"{Fore.RESET}{message}",
-        f"{Fore.CYAN}{os.path.basename(file)}{Fore.RESET}",
-    ]
     print(
-        f'{" ".join(txt):<{w}}',
+        f'{color}[{time.strftime("%m-%d %H:%M:%S", time.localtime())} {sender:>7}] '
+        f"{Fore.YELLOW}{action:<12} "
+        f"{Fore.RESET}{message} "
+        f"{Fore.CYAN}{os.path.basename(file)}{Fore.RESET}",
         end=end,
     )
 

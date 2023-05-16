@@ -11,7 +11,7 @@ from utils import (
 )
 
 
-if __name__ == "__main__":
+def main() -> None:
     # get exclude info
     exclude = {}
     try:
@@ -168,3 +168,15 @@ if __name__ == "__main__":
 
     # ending message
     msg("Summary", "Done")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except KeyboardInterrupt:
+        msg("Summary", "Aborted", "KeyboardInterrupt")
+    except Exception as e:
+        msg("Summary", type(e).__name__, e, error=True)
+        msg("Summary", "STDOUT", e.stdout.decode(), error=True)
+        msg("Summary", "STDERR", e.stderr.decode(), error=True)
+        raise

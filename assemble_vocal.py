@@ -70,3 +70,6 @@ if __name__ == "__main__":
         msg("Vocal", "Safe to Exit")
     except Exception as e:
         msg("Vocal", type(e).__name__, e, error=True)
+        msg("Vocal", "STDOUT", e.stdout.decode(), error=True)
+        msg("Vocal", "STDERR", e.stderr.decode(), error=True)
+        raise
