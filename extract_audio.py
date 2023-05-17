@@ -108,6 +108,8 @@ if __name__ == "__main__":
         msg("Audio", "Safe to Exit")
     except Exception as e:
         msg("Audio", type(e).__name__, e, error=True)
-        msg("Audio", "STDOUT", e.stdout.decode(), error=True)
-        msg("Audio", "STDERR", e.stderr.decode(), error=True)
+        if hasattr(e, "stdout"):
+            msg("Audio", "STDOUT", e.stdout.decode(), error=True)
+        if hasattr(e, "stderr"):
+            msg("Audio", "STDERR", e.stderr.decode(), error=True)
         raise

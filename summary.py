@@ -26,12 +26,15 @@ def main() -> None:
         pass
 
     # print exclude info
-    msg(
-        "Summary",
-        "Audio",
-        f"{len(exclude)} excluded. Maximum duration: {highlight(max(exclude.values()), '>', 300)} s:",
-        f"{max(exclude, key=exclude.get)}",
-    )
+    msg("Summary", "Exclude", f"{len(exclude)} excluded")
+    top_n = [(k, exclude[k]) for k in sorted(exclude, key=exclude.get, reverse=True)]
+    for i in range(min(5, len(top_n))):
+        msg(
+            "Summary",
+            "Exclude",
+            f"#{i+1} max duration: {highlight(top_n[i][1], '>', 300)} s:",
+            f"{top_n[i][0]}",
+        )
 
     # get video info
     video = {}
@@ -58,31 +61,35 @@ def main() -> None:
 
     # compare video and audio
     diff_va = set(video.keys()) - set(audio.keys()) - set(exclude.keys())
+    msg(
+        "Summary",
+        "Audio",
+        f"Found {highlight(len(diff_va), '>', 0)} video without audio",
+    )
+    for i in range(min(5, len(diff_va))):
+        msg("Summary", "Audio", f"Video without audio #{i+1}:", f"{diff_va.pop()}")
     diff_av = (set(audio.keys()) | set(exclude.keys())) - set(video.keys())
     msg(
         "Summary",
         "Audio",
-        f"Found {highlight(len(diff_va), '>', 0)} video without audio, {highlight(len(diff_av), '>', 0)} audio without video",
+        f"Found {highlight(len(diff_av), '>', 0)} audio without video",
     )
+    for i in range(min(5, len(diff_av))):
+        msg("Summary", "Audio", f"Audio without video #{i+1}:", f"{diff_av.pop()}")
     diff_duration = {
         _: abs(video[_] - audio[_]) for _ in set(video.keys()) & set(audio.keys())
     }
-    top_two = [
+    top_n = [
         (k, diff_duration[k])
         for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ][:2]
-    msg(
-        "Summary",
-        "Audio",
-        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
-        f"{top_two[0][0]}",
-    )
-    msg(
-        "Summary",
-        "Audio",
-        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
-        f"{top_two[1][0]}",
-    )
+    ]
+    for i in range(min(5, len(top_n))):
+        msg(
+            "Summary",
+            "Audio",
+            f"#{i+1} inconsistency {highlight(top_n[i][1], '>', 1)} s:",
+            f"{top_n[i][0]}",
+        )
 
     # get vocal info
     vocal = {}
@@ -95,31 +102,35 @@ def main() -> None:
 
     # compare audio and vocal
     diff_av = set(audio.keys()) - set(vocal.keys())
+    msg(
+        "Summary",
+        "Vocal",
+        f"Found {highlight(len(diff_av), '>', 0)} audio without vocal",
+    )
+    for i in range(min(5, len(diff_av))):
+        msg("Summary", "Vocal", f"Audio without vocal #{i+1}:", f"{diff_av.pop()}")
     diff_va = set(vocal.keys()) - set(audio.keys())
     msg(
         "Summary",
         "Vocal",
-        f"Found {highlight(len(diff_av), '>', 0)} audio without vocal, {highlight(len(diff_va), '>', 0)} vocal without audio",
+        f"Found {highlight(len(diff_va), '>', 0)} vocal without audio",
     )
+    for i in range(min(5, len(diff_va))):
+        msg("Summary", "Vocal", f"Vocal without audio #{i+1}:", f"{diff_va.pop()}")
     diff_duration = {
         _: abs(audio[_] - vocal[_]) for _ in set(audio.keys()) & set(vocal.keys())
     }
-    top_two = [
+    top_n = [
         (k, diff_duration[k])
         for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ][:2]
-    msg(
-        "Summary",
-        "Vocal",
-        f"Maximum duration diff {highlight(top_two[0][1], '>', 1)} s:",
-        f"{top_two[0][0]}",
-    )
-    msg(
-        "Summary",
-        "Vocal",
-        f"2nd max duration diff {highlight(top_two[1][1], '>', 1)} s:",
-        f"{top_two[1][0]}",
-    )
+    ]
+    for i in range(min(5, len(top_n))):
+        msg(
+            "Summary",
+            "Vocal",
+            f"#{i+1} inconsistency {highlight(top_n[i][1], '>', 1)} s:",
+            f"{top_n[i][0]}",
+        )
 
     # get transcript info
     transcript = {}
@@ -130,12 +141,46 @@ def main() -> None:
 
     # compare vocal and transcript
     diff_vt = set(vocal.keys()) - set(transcript.keys())
+    msg(
+        "Summary",
+        "Transcript",
+        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript",
+    )
+    for i in range(min(5, len(diff_vt))):
+        msg(
+            "Summary",
+            "Transcript",
+            f"Vocal without transcript #{i+1}:",
+            f"{diff_vt.pop()}",
+        )
     diff_tv = set(transcript.keys()) - set(vocal.keys())
     msg(
         "Summary",
         "Transcript",
-        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, {highlight(len(diff_tv), '>', 0)} transcript without vocal",
+        f"Found {highlight(len(diff_tv), '>', 0)} transcript without vocal",
     )
+    for i in range(min(5, len(diff_tv))):
+        msg(
+            "Summary",
+            "Transcript",
+            f"Transcript without vocal #{i+1}:",
+            f"{diff_tv.pop()}",
+        )
+    diff_duration = {
+        _: abs(vocal[_] - transcript[_])
+        for _ in set(vocal.keys()) & set(transcript.keys())
+    }
+    top_n = [
+        (k, diff_duration[k])
+        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
+    ]
+    for i in range(min(5, len(top_n))):
+        msg(
+            "Summary",
+            "Transcript",
+            f"#{i+1} inconsistency {highlight(top_n[i][1], '>', 600)} s:",
+            f"{top_n[i][0]}",
+        )
     total_duration = sum(video.values())
     transcribed_duration = sum(
         video[k] for k in (set(video.keys()) & set(transcript.keys()))
@@ -145,29 +190,9 @@ def main() -> None:
         "Transcript",
         f"Transcribed {transcribed_duration / 3600:.1f} h in total, {(total_duration - transcribed_duration) / 3600:.1f} h remaining",
     )
-    diff_duration = {
-        _: abs(vocal[_] - transcript[_])
-        for _ in set(vocal.keys()) & set(transcript.keys())
-    }
-    top_two = [
-        (k, diff_duration[k])
-        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ][:2]
-    msg(
-        "Summary",
-        "Transcript",
-        f"Maximum duration diff {highlight(top_two[0][1], '>', 600)} s:",
-        f"{top_two[0][0]}",
-    )
-    msg(
-        "Summary",
-        "Transcript",
-        f"2nd max duration diff {highlight(top_two[1][1], '>', 600)} s:",
-        f"{top_two[1][0]}",
-    )
 
     # ending message
-    msg("Summary", "Done")
+    msg("Summary", "Done", "-" * 32)
 
 
 if __name__ == "__main__":
@@ -177,6 +202,8 @@ if __name__ == "__main__":
         msg("Summary", "Aborted", "KeyboardInterrupt")
     except Exception as e:
         msg("Summary", type(e).__name__, e, error=True)
-        msg("Summary", "STDOUT", e.stdout.decode(), error=True)
-        msg("Summary", "STDERR", e.stderr.decode(), error=True)
+        if hasattr(e, "stdout"):
+            msg("Summary", "STDOUT", e.stdout.decode(), error=True)
+        if hasattr(e, "stderr"):
+            msg("Summary", "STDERR", e.stderr.decode(), error=True)
         raise

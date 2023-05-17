@@ -69,6 +69,7 @@ def search(
     keyword: str,
     options: list[str],
     page: int = 1,
+    join: bool = True,
 ):
     labels = []
     slices = []
@@ -109,25 +110,30 @@ def search(
             slices.append(slice)
         else:
             slices.append(None)
-    # wait for all processes to finish
-    for i, process in enumerate(processes):
-        if not process:
-            # already exists, skip
-            msg("Search", "Trim Skipped", file=slices[i])
-            continue
-        return_code = process.wait()
-        if return_code != 0:
-            msg("Search", "Trim Failed", file=slice, error=True)
-            labels[i] = None
-            slices[i] = None
-        else:
-            msg("Search", "Trim Finished", file=slices[i])
-    # pad to MAX_SLICE_NUM
-    num_audio = len(slices)
-    if num_audio < MAX_SLICE_NUM:
-        labels += [None] * (MAX_SLICE_NUM - num_audio)
-        slices += [None] * (MAX_SLICE_NUM - num_audio)
-    return page, total_page, *labels, *slices
+    # wait for all processes to finish if join is needed
+    if join:
+        for i, process in enumerate(processes):
+            if not process:
+                # already exists, skip
+                msg("Search", "Trim Skipped", file=slices[i])
+                continue
+            return_code = process.wait()
+            if return_code != 0:
+                msg("Search", "Trim Failed", file=slice, error=True)
+                labels[i] = None
+                slices[i] = None
+            else:
+                msg("Search", "Trim Finished", file=slices[i])
+        # pad to MAX_SLICE_NUM
+        num_audio = len(slices)
+        if num_audio < MAX_SLICE_NUM:
+            labels += [None] * (MAX_SLICE_NUM - num_audio)
+            slices += [None] * (MAX_SLICE_NUM - num_audio)
+        # cache for next page
+        search(transcript, roomid, keyword, options, page + 1, False)
+        return page, total_page, *labels, *slices
+    else:
+        msg("Search", "Cache Running in Background")
 
 
 def prev_page(
@@ -196,7 +202,8 @@ if __name__ == "__main__":
                     value=["Audio"],
                     label="Options",
                 )
-                keyword = gr.Textbox(value="晚上好", label="Search For ... (Press Enter)")
+                keyword = gr.Textbox(value="晚上好", label="Search For")
+                submit = gr.Button(value="Search")
             with gr.Column(scale=100):
                 for i in range(MAX_SLICE_NUM):
                     labels.append(gr.Markdown())
@@ -219,6 +226,12 @@ if __name__ == "__main__":
                     forward = gr.Button(value="Next >")
 
         keyword.submit(
+            search,
+            [transcript, roomid, keyword, options],
+            [page, total_page, *labels, *slices],
+        )
+
+        submit.click(
             search,
             [transcript, roomid, keyword, options],
             [page, total_page, *labels, *slices],

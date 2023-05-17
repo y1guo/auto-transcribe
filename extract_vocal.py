@@ -105,6 +105,8 @@ if __name__ == "__main__":
         msg("Demucs", "Safe to Exit")
     except Exception as e:
         msg("Demucs", type(e).__name__, e, error=True)
-        msg("Demucs", "STDOUT", e.stdout.decode(), error=True)
-        msg("Demucs", "STDERR", e.stderr.decode(), error=True)
+        if hasattr(e, "stdout"):
+            msg("Demucs", "STDOUT", e.stdout.decode(), error=True)
+        if hasattr(e, "stderr"):
+            msg("Demucs", "STDERR", e.stderr.decode(), error=True)
         raise

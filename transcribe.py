@@ -189,8 +189,10 @@ if __name__ == "__main__":
         main()
     except Exception as e:
         msg("Xscribe", type(e).__name__, e, error=True)
-        msg("Xscribe", "STDOUT", e.stdout.decode(), error=True)
-        msg("Xscribe", "STDERR", e.stderr.decode(), error=True)
+        if hasattr(e, "stdout"):
+            msg("Xscribe", "STDOUT", e.stdout.decode(), error=True)
+        if hasattr(e, "stderr"):
+            msg("Xscribe", "STDERR", e.stderr.decode(), error=True)
         raise
     except KeyboardInterrupt:
         msg("Xscribe", "Safe to Exit")
