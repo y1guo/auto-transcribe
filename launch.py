@@ -262,4 +262,4 @@ if __name__ == "__main__":
 
         refresh.click(refresh_transcript, outputs=[transcript, status])
 
-    app.launch(share=False)
+    app.launch(share=True)

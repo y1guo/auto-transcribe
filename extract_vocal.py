@@ -81,23 +81,27 @@ def extract_vocal(file: str) -> None:
         f"({speed:.0f}X)",
         file=audio,
     )
+    # continue to extract the rest parts if there are any
+    audio_parts = get_audio_parts(bare_name)
+    for f in audio_parts:
+        extract_vocal(os.path.basename(f))
 
 
 if __name__ == "__main__":
     try:
         msg("Demucs", "Scanning")
+        # finish those in the tmp dir first
+        for tmp_file in os.listdir(DEMUCS_DIR):
+            if tmp_file.endswith("_vocals.wav"):
+                bare_name = (
+                    os.path.basename(tmp_file)
+                    .split("_vocals.wav")[0]
+                    .split("_part_")[0]
+                )
+                audio_parts = get_audio_parts(bare_name)
+                for f in audio_parts:
+                    extract_vocal(os.path.basename(f))
         for file in os.listdir(AUDIO_DIR):
-            # finish those in the tmp dir first
-            for tmp_file in os.listdir(DEMUCS_DIR):
-                if tmp_file.endswith("_vocals.wav"):
-                    bare_name = (
-                        os.path.basename(tmp_file)
-                        .split("_vocals.wav")[0]
-                        .split("_part_")[0]
-                    )
-                    audio_parts = get_audio_parts(bare_name)
-                    for f in audio_parts:
-                        extract_vocal(os.path.basename(f))
             # then those in the audio dir
             if file.endswith(".m4a"):
                 extract_vocal(file)

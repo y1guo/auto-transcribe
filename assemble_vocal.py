@@ -64,7 +64,11 @@ if __name__ == "__main__":
     try:
         msg("Vocal", "Scanning")
         for file in os.listdir(DEMUCS_DIR):
-            if file.endswith("_vocals.wav") and not file.endswith("_no_vocals.wav"):
+            if (
+                os.path.exists(os.path.join(DEMUCS_DIR, file))
+                and file.endswith("_vocals.wav")
+                and not file.endswith("_no_vocals.wav")
+            ):
                 assemble_vocal(file)
     except KeyboardInterrupt:
         msg("Vocal", "Safe to Exit")
