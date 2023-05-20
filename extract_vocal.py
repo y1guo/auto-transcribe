@@ -108,9 +108,12 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         msg("Demucs", "Safe to Exit")
     except Exception as e:
-        msg("Demucs", type(e).__name__, e, error=True)
-        if hasattr(e, "stdout"):
-            msg("Demucs", "STDOUT", e.stdout.decode(), error=True)
-        if hasattr(e, "stderr"):
-            msg("Demucs", "STDERR", e.stderr.decode(), error=True)
-        raise
+        if "RuntimeError: CUDA error: out of memory" in str(e):
+            msg("Demucs", "RuntimeError", "CUDA out of memory", error=True)
+        else:
+            msg("Demucs", type(e).__name__, e, error=True)
+            if hasattr(e, "stdout"):
+                msg("Demucs", "STDOUT", e.stdout.decode(), error=True)
+            if hasattr(e, "stderr"):
+                msg("Demucs", "STDERR", e.stderr.decode(), error=True)
+            raise

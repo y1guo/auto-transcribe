@@ -19,9 +19,10 @@ MAX_SLICE_NUM = 7
 def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
     msg("Search", "Loading Transcripts")
     try:
+        if refresh:
+            raise FileNotFoundError
         with open(os.path.join(TMP_DIR, "transcript.pkl"), "rb") as f:
             transcript = pickle.load(f)
-            # return transcript, status
     except FileNotFoundError:
         tmp = {k: [] for k in ["roomid", "basename", "start", "end", "text", "pinyin"]}
         for file in sorted(os.listdir(TRANSCRIPT_DIR)):
@@ -101,7 +102,8 @@ def search(
             SLICE_DIR,
             f"{row['basename']}_{row['start']:.0f}_{row['end']:.0f}_{row['text']}.mp3",
         )
-        labels.append(f"# [{row['roomid']}] {row['text']}")
+        date = row["basename"].split("_")[1][2:]
+        labels.append(f"# [{row['roomid']}][{date}] {row['text']}")
         if "Audio" in options:
             processes.append(trim(vocal, start, end, slice))
             msg("Search", "Trimming", file=slice)
@@ -131,7 +133,7 @@ def search(
             slices += [None] * (MAX_SLICE_NUM - num_audio)
         # cache for next page
         search(transcript, roomid, keyword, options, page + 1, False)
-        return page, total_page, *labels, *slices
+        return page, total_page, *labels, *slices, *slices
     else:
         msg("Search", "Cache Running in Background")
 
@@ -182,6 +184,7 @@ if __name__ == "__main__":
         # vocal slices
         labels = []
         slices = []
+        audios = []
         favorite = []
 
         gr.Markdown("""# <center>Auto-Transcribe</center>""")
@@ -209,7 +212,8 @@ if __name__ == "__main__":
                     labels.append(gr.Markdown())
                     with gr.Row():
                         with gr.Column(scale=100):
-                            slices.append(
+                            slices.append(gr.State(None))
+                            audios.append(
                                 gr.Audio(
                                     type="filepath",
                                     show_label=False,
@@ -228,31 +232,31 @@ if __name__ == "__main__":
         keyword.submit(
             search,
             [transcript, roomid, keyword, options],
-            [page, total_page, *labels, *slices],
+            [page, total_page, *labels, *slices, *audios],
         )
 
         submit.click(
             search,
             [transcript, roomid, keyword, options],
-            [page, total_page, *labels, *slices],
+            [page, total_page, *labels, *slices, *audios],
         )
 
         page.submit(
             search,
             [transcript, roomid, keyword, options, page],
-            [page, total_page, *labels, *slices],
+            [page, total_page, *labels, *slices, *audios],
         )
 
         backward.click(
             prev_page,
             [transcript, roomid, keyword, options, page],
-            [page, total_page, *labels, *slices],
+            [page, total_page, *labels, *slices, *audios],
         )
 
         forward.click(
             next_page,
             [transcript, roomid, keyword, options, page],
-            [page, total_page, *labels, *slices],
+            [page, total_page, *labels, *slices, *audios],
         )
 
         for i in range(MAX_SLICE_NUM):
@@ -262,4 +266,4 @@ if __name__ == "__main__":
 
         refresh.click(refresh_transcript, outputs=[transcript, status])
 
-    app.launch(share=True)
+    app.launch(share=False)
