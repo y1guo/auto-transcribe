@@ -2,6 +2,7 @@ import os, json
 from utils import (
     VIDEO_DIR_LIST,
     AUDIO_DIR,
+    DEMUCS_DIR,
     EXCLUDELIST,
     VOCAL_DIR,
     TRANSCRIPT_DIR,
@@ -141,10 +142,14 @@ def main() -> None:
 
     # compare vocal and transcript
     diff_vt = set(vocal.keys()) - set(transcript.keys())
+    cached = 0
+    for file in os.listdir(DEMUCS_DIR):
+        if file.endswith("_vocals.wav"):
+            cached += get_duration(os.path.join(DEMUCS_DIR, file))
     msg(
         "Summary",
         "Transcript",
-        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript",
+        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, total {sum([vocal[k] for k in diff_vt]) / 3600:.1f} h, cached {cached / 3600:.1f} h ",
     )
     for i in range(min(5, len(diff_vt))):
         msg(
