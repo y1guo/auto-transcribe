@@ -123,8 +123,8 @@ class Watcher:
 
     def main(self) -> None:
         while True:
-            # set new tasks to idle workers
-            for state in self.states:
+            # set new tasks to idle workers, prioritize GPU1
+            for state in reversed(self.states):
                 if not state["task"]:
                     state["task"] = self.new_task()
             time.sleep(5)

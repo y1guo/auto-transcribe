@@ -149,7 +149,7 @@ def main() -> None:
     msg(
         "Summary",
         "Transcript",
-        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, total {sum([vocal[k] for k in diff_vt]) / 3600:.1f} h, cached {cached / 3600:.1f} h ",
+        f"Found {highlight(len(diff_vt), '>', 0)} vocal without transcript, total {sum([vocal[k] for k in diff_vt]) / 3600:.1f} h + {cached / 3600:.1f} h pending",
     )
     for i in range(min(5, len(diff_vt))):
         msg(

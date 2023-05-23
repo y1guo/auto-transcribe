@@ -51,7 +51,7 @@ def msg(
     end: str = "\n",
 ) -> None:
     # clear line
-    print(" " * os.get_terminal_size().columns, end="\r")
+    print(" " * os.get_terminal_size().columns, end="\r", flush=True)
     # print message
     color = Fore.RED if error else Fore.GREEN
     print(
@@ -60,6 +60,7 @@ def msg(
         f"{Fore.RESET}{message} "
         f"{Fore.CYAN}{os.path.basename(file)}{Fore.RESET}",
         end=end,
+        flush=True,
     )
 
 
