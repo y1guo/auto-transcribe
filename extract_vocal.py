@@ -24,7 +24,11 @@ def skip(file: str) -> bool:
     except FileNotFoundError:
         pass
     # skip if audio is not valid (prerequisite) or either valid vocal or wav already exists (job)
-    if not valid(base_name, "audio") or valid(base_name, "vocal") or valid(base_name, "demucs"):
+    if (
+        not valid(base_name, "audio")
+        or valid(base_name, "vocal")
+        or valid(base_name, "demucs")
+    ):
         return True
     return False
 
@@ -88,7 +92,7 @@ def extract_vocal(id: int, file: str) -> None:
 
 def work(id: int, last_run: list[float], file: str) -> None:
     try:
-        while time.time() - max(last_run) < 90:
+        while time.time() - max(last_run) < 120:
             msg(f"Worker{id}", "Waiting", file=file, end="\r")
             time.sleep(1)
         last_run[id] = time.time()
@@ -132,8 +136,14 @@ if __name__ == "__main__":
             if check_tmp:
                 bare_names = set()
                 for tmp_file in os.listdir(DEMUCS_DIR):
-                    if tmp_file.endswith("_vocals.wav") and not tmp_file.endswith("_no_vocals.wav"):
-                        bare_name = os.path.basename(tmp_file).split("_vocals.wav")[0].split("_part_")[0]
+                    if tmp_file.endswith("_vocals.wav") and not tmp_file.endswith(
+                        "_no_vocals.wav"
+                    ):
+                        bare_name = (
+                            os.path.basename(tmp_file)
+                            .split("_vocals.wav")[0]
+                            .split("_part_")[0]
+                        )
                         bare_names.add(bare_name)
                 for bare_name in bare_names:
                     audio_parts = get_audio_parts(bare_name)

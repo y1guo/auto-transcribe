@@ -191,11 +191,17 @@ def valid(base_name: str, target: str) -> bool:
     if target == "audio":
         for file in os.listdir(TMP_DIR):
             if file.startswith(bare_name):
-                os.remove(os.path.join(TMP_DIR, file))
+                try:
+                    os.remove(os.path.join(TMP_DIR, file))
+                except:
+                    pass
     elif target == "vocal":
         for file in os.listdir(DEMUCS_DIR):
             if file.startswith(bare_name):
-                os.remove(os.path.join(DEMUCS_DIR, file))
+                try:
+                    os.remove(os.path.join(DEMUCS_DIR, file))
+                except:
+                    pass
     # add to valid list
     with open(VALIDLIST, "a") as f:
         if target in ["audio", "demucs"]:
