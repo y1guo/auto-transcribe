@@ -134,13 +134,29 @@ def valid(base_name: str, target: str) -> bool:
     vocal = os.path.join(VOCAL_DIR, f"{bare_name}.mp3")
     transcript = os.path.join(TRANSCRIPT_DIR, f"{bare_name}.json")
     VALIDLIST = os.path.join(TMP_DIR, f"valid_{target}.txt")
-    # check if already validated
+    # check if already validated, and clean up temporary files
     try:
         with open(VALIDLIST) as f:
             valid_list = f.read().splitlines()
-            if target in ["audio", "demucs"] and base_name in valid_list:
+            if target in ["audio"] and base_name in valid_list:
+                # clean up temporary files
+                if target == "audio":
+                    for file in os.listdir(TMP_DIR):
+                        if file.startswith(bare_name):
+                            try:
+                                os.remove(os.path.join(TMP_DIR, file))
+                            except:
+                                pass
                 return True
             if target in ["vocal", "transcript"] and bare_name in valid_list:
+                # clean up temporary files
+                if target == "vocal":
+                    for file in os.listdir(DEMUCS_DIR):
+                        if file.startswith(bare_name):
+                            try:
+                                os.remove(os.path.join(DEMUCS_DIR, file))
+                            except:
+                                pass
                 return True
     except FileNotFoundError:
         pass
@@ -153,7 +169,7 @@ def valid(base_name: str, target: str) -> bool:
             compare = audio_parts[audio]
             threshold = 1
             sender = "Audio"
-        elif target == "demucs":
+        else:
             file = wav
             compare = audio_parts[audio]
             threshold = 1
@@ -167,7 +183,7 @@ def valid(base_name: str, target: str) -> bool:
             compare = video_duration
             threshold = 1
             sender = "Vocal"
-        elif target == "transcript":
+        else:
             file = transcript
             compare = video_duration
             threshold = 600
@@ -187,24 +203,9 @@ def valid(base_name: str, target: str) -> bool:
         #     error=True,
         # )
         return False
-    # validated, clean up
-    if target == "audio":
-        for file in os.listdir(TMP_DIR):
-            if file.startswith(bare_name):
-                try:
-                    os.remove(os.path.join(TMP_DIR, file))
-                except:
-                    pass
-    elif target == "vocal":
-        for file in os.listdir(DEMUCS_DIR):
-            if file.startswith(bare_name):
-                try:
-                    os.remove(os.path.join(DEMUCS_DIR, file))
-                except:
-                    pass
     # add to valid list
     with open(VALIDLIST, "a") as f:
-        if target in ["audio", "demucs"]:
+        if target in ["audio"]:
             f.write(base_name + "\n")
         elif target in ["vocal", "transcript"]:
             f.write(bare_name + "\n")

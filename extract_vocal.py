@@ -60,7 +60,6 @@ def extract_vocal(id: int, file: str) -> None:
         )
         if output.returncode != 0:
             raise Exception((output.stdout + output.stderr).decode())
-        os.remove(wav_no_vocal)
     except (Exception, KeyboardInterrupt) as e:
         for f in [wav, wav_no_vocal]:
             try:
@@ -75,24 +74,30 @@ def extract_vocal(id: int, file: str) -> None:
                 error=True,
             )
             # problem might be because there's no speech in the audio, exclude the audio if duration is small
-            if audio_duration < 300:
+            if audio_duration < 90:
                 with open(EXCLUDELIST, "a") as f:
                     f.write(f"{file}\n")
                 msg(f"Worker{id}", "Excluded", file=audio, error=True)
         raise
-    end_time = time.time()
-    speed = get_duration(wav) / (end_time - start_time)
-    msg(
-        f"Worker{id}",
-        "Extracted",
-        f"({speed:.0f}X)",
-        file=audio,
-    )
+    else:
+        end_time = time.time()
+        speed = get_duration(wav) / (end_time - start_time)
+        msg(
+            f"Worker{id}",
+            "Extracted",
+            f"({speed:.0f}X)",
+            file=audio,
+        )
+    finally:
+        try:
+            os.remove(wav_no_vocal)
+        except:
+            pass
 
 
 def work(id: int, last_run: list[float], file: str) -> None:
     try:
-        while time.time() - max(last_run) < 120:
+        while time.time() - max(last_run) < 180:
             msg(f"Worker{id}", "Waiting", file=file, end="\r")
             time.sleep(1)
         last_run[id] = time.time()
@@ -126,7 +131,7 @@ def run(file: str) -> None:
 
 if __name__ == "__main__":
     msg("Demucs", "Scanning")
-    NUM_PROC = 2
+    NUM_PROC = 1
     processes = [None] * NUM_PROC
     with Manager() as manager:
         last_run = manager.list([0] * NUM_PROC)

@@ -78,14 +78,17 @@ def search(
     # filter transcript by roomid
     if roomid != "all":
         transcript = transcript[transcript["roomid"] == roomid]
-    # filter transcript by keywords, allow multiple keywords separated by space
-    for k in keyword.split():
-        if "Pinyin" in options:
-            transcript = transcript[
-                transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))
-            ]
-        else:
-            transcript = transcript[transcript["text"].str.contains(k)]
+    # filter transcript by keywords, allow multiple keywords separated by space, use "" for exact match
+    if keyword.startswith('"') and keyword.endswith('"'):
+        transcript = transcript[transcript["text"] == keyword[1:-1]]
+    else:
+        for k in keyword.split():
+            if "Pinyin" in options:
+                transcript = transcript[
+                    transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))
+                ]
+            else:
+                transcript = transcript[transcript["text"].str.contains(k)]
     transcript = transcript.reset_index(drop=True)
     # regulate page number
     total_page = (len(transcript) - 1) // MAX_SLICE_NUM + 1
