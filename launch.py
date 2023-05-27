@@ -79,7 +79,16 @@ def search(
     if roomid != "all":
         transcript = transcript[transcript["roomid"] == roomid]
     # filter transcript by keywords, allow multiple keywords separated by space, use "" for exact match
-    if keyword.startswith('"') and keyword.endswith('"'):
+    if (
+        keyword.startswith('"')
+        and keyword.endswith('"')
+        or keyword.startswith("'")
+        and keyword.endswith("'")
+        or keyword.startswith("“")
+        and keyword.endswith("”")
+        or keyword.startswith("‘")
+        and keyword.endswith("’")
+    ):
         transcript = transcript[transcript["text"] == keyword[1:-1]]
     else:
         for k in keyword.split():
