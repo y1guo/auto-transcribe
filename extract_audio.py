@@ -107,9 +107,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         msg("Audio", "Safe to Exit")
     except Exception as e:
-        msg("Audio", type(e).__name__, e, error=True)
-        if hasattr(e, "stdout"):
-            msg("Audio", "STDOUT", e.stdout.decode(), error=True)
-        if hasattr(e, "stderr"):
-            msg("Audio", "STDERR", e.stderr.decode(), error=True)
+        msg("Audio", type(e).__name__, str(e), error=True)
         raise

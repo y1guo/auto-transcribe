@@ -206,9 +206,5 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         msg("Summary", "Aborted", "KeyboardInterrupt")
     except Exception as e:
-        msg("Summary", type(e).__name__, e, error=True)
-        if hasattr(e, "stdout"):
-            msg("Summary", "STDOUT", e.stdout.decode(), error=True)
-        if hasattr(e, "stderr"):
-            msg("Summary", "STDERR", e.stderr.decode(), error=True)
+        msg("Summary", type(e).__name__, str(e), error=True)
         raise

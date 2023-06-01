@@ -24,11 +24,7 @@ def skip(file: str) -> bool:
     except FileNotFoundError:
         pass
     # skip if audio is not valid (prerequisite) or either valid vocal or wav already exists (job)
-    if (
-        not valid(base_name, "audio")
-        or valid(base_name, "vocal")
-        or valid(base_name, "demucs")
-    ):
+    if not valid(base_name, "audio") or valid(base_name, "vocal") or valid(base_name, "demucs"):
         return True
     return False
 
@@ -74,7 +70,7 @@ def extract_vocal(id: int, file: str) -> None:
                 error=True,
             )
             # problem might be because there's no speech in the audio, exclude the audio if duration is small
-            if audio_duration < 90:
+            if audio_duration < 300:
                 with open(EXCLUDELIST, "a") as f:
                     f.write(f"{file}\n")
                 msg(f"Worker{id}", "Excluded", file=audio, error=True)
@@ -97,7 +93,7 @@ def extract_vocal(id: int, file: str) -> None:
 
 def work(id: int, last_run: list[float], file: str) -> None:
     try:
-        while time.time() - max(last_run) < 180:
+        while time.time() - max(last_run) < 150:
             msg(f"Worker{id}", "Waiting", file=file, end="\r")
             time.sleep(1)
         last_run[id] = time.time()
@@ -108,11 +104,7 @@ def work(id: int, last_run: list[float], file: str) -> None:
         if "RuntimeError: CUDA error: out of memory" in str(e):
             msg(f"Worker{id}", "RuntimeError", "CUDA out of memory", error=True)
         else:
-            msg(f"Worker{id}", type(e).__name__, e, error=True)
-            if hasattr(e, "stdout"):
-                msg(f"Worker{id}", "STDOUT", e.stdout.decode(), error=True)
-            if hasattr(e, "stderr"):
-                msg(f"Worker{id}", "STDERR", e.stderr.decode(), error=True)
+            msg(f"Worker{id}", type(e).__name__, str(e), error=True)
             raise
     finally:
         last_run[id] = 0
@@ -132,7 +124,7 @@ def run(file: str) -> None:
 if __name__ == "__main__":
     msg("Demucs", "Scanning")
     NUM_PROC = 1
-    processes = [None] * NUM_PROC
+    processes: list[Process | None] = [None] * NUM_PROC
     with Manager() as manager:
         last_run = manager.list([0] * NUM_PROC)
         check_tmp = True
@@ -141,14 +133,8 @@ if __name__ == "__main__":
             if check_tmp:
                 bare_names = set()
                 for tmp_file in os.listdir(DEMUCS_DIR):
-                    if tmp_file.endswith("_vocals.wav") and not tmp_file.endswith(
-                        "_no_vocals.wav"
-                    ):
-                        bare_name = (
-                            os.path.basename(tmp_file)
-                            .split("_vocals.wav")[0]
-                            .split("_part_")[0]
-                        )
+                    if tmp_file.endswith("_vocals.wav") and not tmp_file.endswith("_no_vocals.wav"):
+                        bare_name = os.path.basename(tmp_file).split("_vocals.wav")[0].split("_part_")[0]
                         bare_names.add(bare_name)
                 for bare_name in bare_names:
                     audio_parts = get_audio_parts(bare_name)
