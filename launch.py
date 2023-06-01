@@ -92,8 +92,8 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
 
 def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.ndarray, int, Figure]:
     vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
-    slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
-    wav = os.path.join(TMP_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.wav")
+    slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
+    wav = os.path.join(TMP_DIR, f"{base_name}_{start:.0f}_{end:.0f}.wav")
     waveform = torch.zeros((1, 44100))
     sample_rate = 44100
 
@@ -176,7 +176,7 @@ def search(
         s = base_name.split("_")[1]
         date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
         labels[i] = f"# [{roomid}]{date} {text}"
-        slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
+        slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
         if "Audio" in options or os.path.exists(slice_file):
             info[i] = (base_name, start, end, text)
         i += 1
@@ -237,8 +237,7 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         for _, row in transcript[transcript["basename"] == base_name].iterrows():
             start = max(row["start"] - margin, 0)
             end = row["end"] + margin
-            text = row["text"]
-            slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
+            slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
             if not os.path.exists(slice):
                 rows.append((start, end, slice))
         if not rows:
