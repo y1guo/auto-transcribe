@@ -3,6 +3,7 @@ import gradio as gr
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 from multiprocessing import Process, Pool
 from pypinyin import lazy_pinyin
 from utils import (
@@ -16,7 +17,7 @@ from utils import (
 )
 
 
-MAX_SLICE_NUM = 1
+MAX_SLICE_NUM = 7
 
 
 def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
@@ -80,20 +81,16 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
         samples.append(waveform[i : i + 100].max())
         time_axis.append((i + 50) / sample_rate)
         samples.append(waveform[i : i + 100].min())
-    return gr.LinePlot.update(
-        value=pd.DataFrame({"time": time_axis, "wave": samples}),
-        x="time",
-        y="wave",
-        width=400,
-        height=30,
-        show_label=False,
-        x_title=None,
-        y_title=None,
-        interactive=False,
-    )
+    fig = plt.figure(figsize=(20, 1), facecolor="black")
+    plt.plot(time_axis, samples, color="white")
+    plt.xlim(min(time_axis), max(time_axis))
+    amp = max(abs(min(samples)), abs(max(samples)))
+    plt.ylim(-amp, amp)
+    plt.axis("off")
+    return fig
 
 
-def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.ndarray, int, dict]:
+def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.ndarray, int, Figure]:
     vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
     slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
     wav = os.path.join(TMP_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.wav")
@@ -141,7 +138,7 @@ def search(
     labels: list[str | None] = [None] * MAX_SLICE_NUM
     info: list[tuple | None] = [None] * MAX_SLICE_NUM
     slices: list[tuple | None] = [None] * MAX_SLICE_NUM
-    waveplots: list[dict | None] = [None] * MAX_SLICE_NUM
+    waveplots: list[Figure | None] = [None] * MAX_SLICE_NUM
     # filter transcript by roomid
     if roomid != "all":
         transcript = transcript[transcript["roomid"] == roomid]
@@ -195,7 +192,7 @@ def search(
                     waveplots[j] = waveplot
                     i += 1
         # cache for next page
-        # search(transcript, roomid, keyword, options, margin, page + 1, False)
+        search(transcript, roomid, keyword, options, margin, page + 1, False)
     else:
         msg("Search", "Cache Running in Background")
     return page, total_page, *labels, *info, *slices, *waveplots
@@ -295,14 +292,12 @@ def save_to_favorite(info: tuple[str, float, float, str]) -> str:
         return f"Saved to {favorite}"
 
 
-def test_audio_change(data: tuple) -> None:
-    sr, audio = data
-    print(sr, audio.shape, audio.dtype, audio.min(), audio.max())
-
-
 if __name__ == "__main__":
     css = "footer {display: none !important;} .gradio-container {min-height: 0px !important;} .gradio-container {min-width: 0px !important;}"
-    with gr.Blocks(css=css) as app:
+    with gr.Blocks(
+        css=css,
+        theme=gr.themes.Default(spacing_size=gr.themes.sizes.spacing_sm),
+    ) as app:
         # load transcripts
         df, init_status = load_transcript()
         transcript = gr.State(df)
@@ -335,10 +330,6 @@ if __name__ == "__main__":
                 )
                 keyword = gr.Textbox(value="晚上好", label="Search For")
                 submit = gr.Button(value="Search")
-                test_audio = gr.Audio(
-                    show_label=False,
-                    interactive=True,
-                )
             with gr.Column(scale=100):
                 for i in range(MAX_SLICE_NUM):
                     labels.append(gr.Markdown())
@@ -351,8 +342,8 @@ if __name__ == "__main__":
                                     interactive=False,
                                 )
                             )
-                            waveplots.append(gr.LinePlot())
-                        favorite.append(gr.Button(value="Save to Favorites"))
+                            waveplots.append(gr.Plot(show_label=False))
+                        favorite.append(gr.Button(value="Save to Favorites").style(size="sm"))
                 with gr.Row():
                     backward = gr.Button(value="< Previous")
                     page = gr.Number(value=0, label="Page", precision=0)
@@ -395,7 +386,5 @@ if __name__ == "__main__":
         cache.click(cache_all_slices, [transcript, margin])
 
         refresh.click(refresh_transcript, outputs=[transcript, status])
-
-        test_audio.change(test_audio_change, test_audio)
 
     app.launch(share=False)
