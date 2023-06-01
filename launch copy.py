@@ -17,7 +17,7 @@ from utils import (
 )
 
 
-MAX_SLICE_NUM = 6
+MAX_SLICE_NUM = 7
 
 
 def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
@@ -173,9 +173,8 @@ def search(
         start: float = max(row["start"] - margin, 0)
         end: float = row["end"] + margin
         text: str = row["text"]
-        s = base_name.split("_")[1]
-        date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
-        labels[i] = f"# [{roomid}]{date} {text}"
+        date = base_name.split("_")[1][2:]
+        labels[i] = f"# [{roomid}][{date}] {text}"
         slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
         if "Audio" in options or os.path.exists(slice_file):
             info[i] = (base_name, start, end, text)
