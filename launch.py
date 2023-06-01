@@ -175,7 +175,7 @@ def search(
         text: str = row["text"]
         s = base_name.split("_")[1]
         date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
-        labels[i] = f"# [{roomid}]{date} {text}"
+        labels[i] = f"# [{roomid}] {date} {text}"
         slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
         if "Audio" in options or os.path.exists(slice_file):
             info[i] = (base_name, start, end, text)
@@ -229,10 +229,21 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     msg("Search", "Caching All Slices", "This may take a long long while")
     num_proc = torch.multiprocessing.cpu_count()
     processes: list[Process | None] = [None] * num_proc
+    skip_list = []
+    VALIDLIST = os.path.join(TMP_DIR, "valid_slices.txt")
+    try:
+        with open(VALIDLIST) as f:
+            skip_list = f.read().splitlines()
+    except:
+        pass
     for base_name in transcript["basename"].unique():
         vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
         # skip if already cached
         msg("Cache", "Checking", file=vocal)
+        # check valid list
+        if base_name in skip_list:
+            continue
+        # else check cached slices
         rows = []
         for _, row in transcript[transcript["basename"] == base_name].iterrows():
             start = max(row["start"] - margin, 0)
@@ -241,6 +252,8 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
             if not os.path.exists(slice):
                 rows.append((start, end, slice))
         if not rows:
+            with open(VALIDLIST, "a") as f:
+                f.write(base_name + "\n")
             continue
         # convert mp3 to wav
         wav = os.path.join(TMP_DIR, f"{base_name}.wav")
