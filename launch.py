@@ -102,7 +102,7 @@ def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.
         if abs(start + get_duration(slice) - end) < 1:
             exists = True
     except:
-        raise
+        pass
 
     try:
         if exists:
@@ -115,13 +115,13 @@ def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.
             # else trim vocal
             msg("Search", "Trimming", file=slice)
             ffmpeg.input(vocal).output(wav, ss=start, to=end).run(overwrite_output=True, quiet=True)
-            waveform, sample_rate = torchaudio.load(vocal)  # type: ignore
+            waveform, sample_rate = torchaudio.load(wav)  # type: ignore
             os.remove(wav)
             torchaudio.save(slice, waveform, sample_rate)  # type: ignore
     except Exception as e:
-        msg("Search", type(e).__name__, str(e), file=slice)
+        msg("Search", type(e).__name__, str(e), file=slice, error=True)
 
-    arr = np.array(waveform.numpy().T * 2**16, dtype=np.int16)
+    arr = np.array(waveform.numpy().T * 2**15, dtype=np.int16)
     assert len(arr.shape) == 2
     return arr, sample_rate, get_waveplot(arr.mean(axis=1), sample_rate, slice)
 
@@ -133,7 +133,7 @@ def search(
     options: list[str],
     margin: float,
     page: int = 1,
-    join: bool = True,
+    next_page: bool = True,
 ):
     labels: list[str | None] = [None] * MAX_SLICE_NUM
     info: list[tuple | None] = [None] * MAX_SLICE_NUM
@@ -181,8 +181,8 @@ def search(
             info[i] = (base_name, start, end, text)
         i += 1
     # wait for all processes to finish if join is needed
-    if join:
-        args = [item for item in info if item is not None]
+    args = [item for item in info if item is not None]
+    if args:
         with Pool(len(args)) as pool:
             res = pool.starmap(load_slice, args)
             i = 0
@@ -192,10 +192,10 @@ def search(
                     slices[j] = (sample_rate, wave_arr)
                     waveplots[j] = waveplot
                     i += 1
-        # cache for next page
-        search(transcript, roomid, keyword, options, margin, page + 1, False)
-    else:
-        msg("Search", "Cache Running in Background")
+    # cache for next page
+    if next_page:
+        msg("Search", "Caching Next Page")
+        search(transcript, roomid, keyword, options, margin, page + 1, next_page=False)
     return page, total_page, *labels, *info, *slices, *waveplots
 
 
@@ -227,7 +227,8 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         torchaudio.save(path, waveform, sample_rate)  # type: ignore
 
     msg("Search", "Caching All Slices", "This may take a long long while")
-    num_proc = torch.multiprocessing.cpu_count()
+    # num_proc = torch.multiprocessing.cpu_count()
+    num_proc = 4
     processes: list[Process | None] = [None] * num_proc
     skip_list = []
     VALIDLIST = os.path.join(TMP_DIR, "valid_slices.txt")
@@ -265,6 +266,7 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         except:
             msg("Cache", "mp3 to wav", file=vocal)
             ffmpeg.input(vocal).output(wav).run(quiet=True, overwrite_output=True)
+            time.sleep(1)
         finally:
             msg("Cache", "Loading", file=wav)
             waveform, sample_rate = torchaudio.load(wav)  # type: ignore
@@ -284,11 +286,12 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
                         break
                 if done:
                     break
-                time.sleep(0.01)
+                time.sleep(0.1)
         try:
             os.remove(wav)
         except:
             pass
+    msg("Cache", "Done")
 
 
 def save_to_favorite(info: tuple[str, float, float, str]) -> str:

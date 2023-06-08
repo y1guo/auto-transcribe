@@ -50,6 +50,8 @@ def extract_vocal(id: int, file: str) -> None:
                 TMP_DIR,
                 "--filename",
                 "{track}_{stem}.{ext}",
+                "-d",
+                "cuda:1",
                 audio,
             ],
             capture_output=True,
