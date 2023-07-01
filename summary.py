@@ -77,13 +77,8 @@ def main() -> None:
     )
     for i in range(min(5, len(diff_av))):
         msg("Summary", "Audio", f"Audio without video #{i+1}:", f"{diff_av.pop()}")
-    diff_duration = {
-        _: abs(video[_] - audio[_]) for _ in set(video.keys()) & set(audio.keys())
-    }
-    top_n = [
-        (k, diff_duration[k])
-        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ]
+    diff_duration = {_: abs(video[_] - audio[_]) for _ in set(video.keys()) & set(audio.keys())}
+    top_n = [(k, diff_duration[k]) for k in sorted(diff_duration, key=diff_duration.get, reverse=True)]
     for i in range(min(5, len(top_n))):
         msg(
             "Summary",
@@ -118,13 +113,8 @@ def main() -> None:
     )
     for i in range(min(5, len(diff_va))):
         msg("Summary", "Vocal", f"Vocal without audio #{i+1}:", f"{diff_va.pop()}")
-    diff_duration = {
-        _: abs(audio[_] - vocal[_]) for _ in set(audio.keys()) & set(vocal.keys())
-    }
-    top_n = [
-        (k, diff_duration[k])
-        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ]
+    diff_duration = {_: abs(audio[_] - vocal[_]) for _ in set(audio.keys()) & set(vocal.keys())}
+    top_n = [(k, diff_duration[k]) for k in sorted(diff_duration, key=diff_duration.get, reverse=True)]
     for i in range(min(5, len(top_n))):
         msg(
             "Summary",
@@ -171,14 +161,8 @@ def main() -> None:
             f"Transcript without vocal #{i+1}:",
             f"{diff_tv.pop()}",
         )
-    diff_duration = {
-        _: abs(vocal[_] - transcript[_])
-        for _ in set(vocal.keys()) & set(transcript.keys())
-    }
-    top_n = [
-        (k, diff_duration[k])
-        for k in sorted(diff_duration, key=diff_duration.get, reverse=True)
-    ]
+    diff_duration = {_: abs(vocal[_] - transcript[_]) for _ in set(vocal.keys()) & set(transcript.keys())}
+    top_n = [(k, diff_duration[k]) for k in sorted(diff_duration, key=diff_duration.get, reverse=True)]
     for i in range(min(5, len(top_n))):
         msg(
             "Summary",
@@ -187,9 +171,7 @@ def main() -> None:
             f"{top_n[i][0]}",
         )
     total_duration = sum(video.values())
-    transcribed_duration = sum(
-        video[k] for k in (set(video.keys()) & set(transcript.keys()))
-    )
+    transcribed_duration = sum(video[k] for k in (set(video.keys()) & set(transcript.keys())))
     msg(
         "Summary",
         "Transcript",

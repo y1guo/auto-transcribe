@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from multiprocessing import Process, Pool
+from multiprocessing import Process, Queue
 from pypinyin import lazy_pinyin
 from utils import (
     TRANSCRIPT_DIR,
@@ -17,7 +17,8 @@ from utils import (
 )
 
 
-MAX_SLICE_NUM = 6
+MAX_SLICE_NUM = 1
+# MAX_SLICE_NUM = 6
 
 
 def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
@@ -87,10 +88,11 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
     amp = max(abs(min(samples)), abs(max(samples)))
     plt.ylim(-amp, amp)
     plt.axis("off")
+    plt.savefig(os.path.splitext(os.path.basename(file))[0] + ".jpg", bbox_inches="tight", pad_inches=0, dpi=48)
     return fig
 
 
-def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.ndarray, int, Figure]:
+def load_slice(base_name: str, start: float, end: float) -> tuple[np.ndarray, int, Figure]:
     vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
     slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
     wav = os.path.join(TMP_DIR, f"{base_name}_{start:.0f}_{end:.0f}.wav")
@@ -99,7 +101,7 @@ def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.
 
     exists = False
     try:
-        if abs(start + get_duration(slice) - end) < 1:
+        if abs(start + get_duration(slice) - end) < 2:
             exists = True
     except:
         pass
@@ -115,6 +117,7 @@ def load_slice(base_name: str, start: float, end: float, text: str) -> tuple[np.
             # else trim vocal
             msg("Search", "Trimming", file=slice)
             ffmpeg.input(vocal).output(wav, ss=start, to=end).run(overwrite_output=True, quiet=True)
+            time.sleep(1)
             waveform, sample_rate = torchaudio.load(wav)  # type: ignore
             os.remove(wav)
             torchaudio.save(slice, waveform, sample_rate)  # type: ignore
@@ -133,7 +136,7 @@ def search(
     options: list[str],
     margin: float,
     page: int = 1,
-    next_page: bool = True,
+    join: bool = True,
 ):
     labels: list[str | None] = [None] * MAX_SLICE_NUM
     info: list[tuple | None] = [None] * MAX_SLICE_NUM
@@ -180,22 +183,36 @@ def search(
         if "Audio" in options or os.path.exists(slice_file):
             info[i] = (base_name, start, end, text)
         i += 1
-    # wait for all processes to finish if join is needed
-    args = [item for item in info if item is not None]
-    if args:
-        with Pool(len(args)) as pool:
-            res = pool.starmap(load_slice, args)
-            i = 0
-            for j in range(len(info)):
-                if info[j] is not None:
-                    wave_arr, sample_rate, waveplot = res[i]
-                    slices[j] = (sample_rate, wave_arr)
-                    waveplots[j] = waveplot
-                    i += 1
-    # cache for next page
-    if next_page:
+
+    # load slices in parallel
+    def work(idx: int, arg: tuple[str, float, float, str], queue: Queue) -> None:
+        wave_arr, sample_rate, waveplot = load_slice(arg[0], arg[1], arg[2])
+        queue.put((idx, (wave_arr, sample_rate, waveplot)))
+
+    processes: list[Process | None] = []
+    queue = Queue()
+    for arg in info:
+        if arg:
+            p = Process(target=work, args=(len(processes), arg, queue))
+            p.start()
+            processes.append(p)
+        else:
+            processes.append(None)
+    if join:
+        # wait for all processes to finish if join is needed
+        for p in processes:
+            if p:
+                idx, res = queue.get()
+                wave_arr, sample_rate, waveplot = res
+                slices[idx] = (sample_rate, wave_arr)
+                waveplots[idx] = waveplot
+        for p in processes:
+            if p:
+                p.join()
+        # cache for next page
         msg("Search", "Caching Next Page")
-        search(transcript, roomid, keyword, options, margin, page + 1, next_page=False)
+        search(transcript, roomid, keyword, options, margin, page + 1, join=False)
+
     return page, total_page, *labels, *info, *slices, *waveplots
 
 

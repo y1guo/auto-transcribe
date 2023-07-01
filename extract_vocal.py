@@ -1,4 +1,4 @@
-import os, time, subprocess
+import os, time, subprocess, torch
 from multiprocessing import Process, Manager
 from utils import (
     AUDIO_DIR,
@@ -51,7 +51,7 @@ def extract_vocal(id: int, file: str) -> None:
                 "--filename",
                 "{track}_{stem}.{ext}",
                 "-d",
-                "cuda:1",
+                f"cuda:{torch.cuda.device_count() - 1 - id}",
                 audio,
             ],
             capture_output=True,
@@ -95,7 +95,7 @@ def extract_vocal(id: int, file: str) -> None:
 
 def work(id: int, last_run: list[float], file: str) -> None:
     try:
-        while time.time() - max(last_run) < 150:
+        while time.time() - max(last_run) < 0:
             msg(f"Worker{id}", "Waiting", file=file, end="\r")
             time.sleep(1)
         last_run[id] = time.time()
@@ -125,7 +125,7 @@ def run(file: str) -> None:
 
 if __name__ == "__main__":
     msg("Demucs", "Scanning")
-    NUM_PROC = 1
+    NUM_PROC = torch.cuda.device_count()
     processes: list[Process | None] = [None] * NUM_PROC
     with Manager() as manager:
         last_run = manager.list([0] * NUM_PROC)
