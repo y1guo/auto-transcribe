@@ -185,7 +185,7 @@ def search(
         text: str = row["text"]
         s = base_name.split("_")[1]
         date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
-        labels[i] = f"# [{roomid}] {date} {text}"
+        labels[i] = f"# [{base_name.split('_')[0]}] {date} {text}"
         slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
         if "Audio" in options or os.path.exists(slice_file):
             info[i] = (base_name, start, end, text)
