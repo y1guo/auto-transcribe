@@ -17,8 +17,7 @@ from utils import (
 )
 
 
-MAX_SLICE_NUM = 1
-# MAX_SLICE_NUM = 6
+MAX_SLICE_NUM = 6
 
 
 def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
@@ -88,7 +87,6 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
     amp = max(abs(min(samples)), abs(max(samples)))
     plt.ylim(-amp, amp)
     plt.axis("off")
-    plt.savefig(os.path.splitext(os.path.basename(file))[0] + ".jpg", bbox_inches="tight", pad_inches=0, dpi=48)
     return fig
 
 
@@ -132,11 +130,12 @@ def load_slice(base_name: str, start: float, end: float) -> tuple[np.ndarray, in
 def search(
     transcript: pd.DataFrame,
     roomid: str,
+    date_from: int,
+    date_to: int,
     keyword: str,
     options: list[str],
     margin: float,
     page: int = 1,
-    join: bool = True,
 ):
     labels: list[str | None] = [None] * MAX_SLICE_NUM
     info: list[tuple | None] = [None] * MAX_SLICE_NUM
@@ -163,6 +162,14 @@ def search(
                 transcript = transcript[transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))]
             else:
                 transcript = transcript[transcript["text"].str.contains(k)]
+
+    # filter transcript by date
+    def date_filter(base_name: str) -> bool:
+        date = int(base_name.split("_")[1])
+        return date_from <= date <= date_to
+
+    transcript = transcript[transcript["basename"].apply(date_filter)]
+    # reset index
     transcript = transcript.reset_index(drop=True)
     # regulate page number
     total_page = (len(transcript) - 1) // MAX_SLICE_NUM + 1
@@ -198,20 +205,16 @@ def search(
             processes.append(p)
         else:
             processes.append(None)
-    if join:
-        # wait for all processes to finish if join is needed
-        for p in processes:
-            if p:
-                idx, res = queue.get()
-                wave_arr, sample_rate, waveplot = res
-                slices[idx] = (sample_rate, wave_arr)
-                waveplots[idx] = waveplot
-        for p in processes:
-            if p:
-                p.join()
-        # cache for next page
-        msg("Search", "Caching Next Page")
-        search(transcript, roomid, keyword, options, margin, page + 1, join=False)
+    # wait for all processes to finish if join is needed
+    for p in processes:
+        if p:
+            idx, res = queue.get()
+            wave_arr, sample_rate, waveplot = res
+            slices[idx] = (sample_rate, wave_arr)
+            waveplots[idx] = waveplot
+    for p in processes:
+        if p:
+            p.join()
 
     return page, total_page, *labels, *info, *slices, *waveplots
 
@@ -219,23 +222,27 @@ def search(
 def prev_page(
     transcript: pd.DataFrame,
     roomid: str,
+    date_from: int,
+    date_to: int,
     keyword: str,
     options: list[str],
     margin: float,
     page: int,
 ):
-    return search(transcript, roomid, keyword, options, margin, page - 1)
+    return search(transcript, roomid, date_from, date_to, keyword, options, margin, page - 1)
 
 
 def next_page(
     transcript: pd.DataFrame,
     roomid: str,
+    date_from: int,
+    date_to: int,
     keyword: str,
     options: list[str],
     margin: float,
     page: int,
 ):
-    return search(transcript, roomid, keyword, options, margin, page + 1)
+    return search(transcript, roomid, date_from, date_to, keyword, options, margin, page + 1)
 
 
 def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
@@ -361,6 +368,8 @@ if __name__ == "__main__":
                     value=1,
                     label="Audio Margin (seconds)",
                 )
+                date_from = gr.Number(value=20220101, label="Date From", precision=0)
+                date_to = gr.Number(value=20770101, label="Date To", precision=0)
                 keyword = gr.Textbox(value="晚上好", label="Search For")
                 submit = gr.Button(value="Search")
             with gr.Column(scale=100):
@@ -385,31 +394,31 @@ if __name__ == "__main__":
 
         keyword.submit(
             search,
-            [transcript, roomid, keyword, options, margin],
+            [transcript, roomid, date_from, date_to, keyword, options, margin],
             [page, total_page, *labels, *info, *audios, *waveplots],
         )
 
         submit.click(
             search,
-            [transcript, roomid, keyword, options, margin],
+            [transcript, roomid, date_from, date_to, keyword, options, margin],
             [page, total_page, *labels, *info, *audios, *waveplots],
         )
 
         page.submit(
             search,
-            [transcript, roomid, keyword, options, margin, page],
+            [transcript, roomid, date_from, date_to, keyword, options, margin, page],
             [page, total_page, *labels, *info, *audios, *waveplots],
         )
 
         backward.click(
             prev_page,
-            [transcript, roomid, keyword, options, margin, page],
+            [transcript, roomid, date_from, date_to, keyword, options, margin, page],
             [page, total_page, *labels, *info, *audios, *waveplots],
         )
 
         forward.click(
             next_page,
-            [transcript, roomid, keyword, options, margin, page],
+            [transcript, roomid, date_from, date_to, keyword, options, margin, page],
             [page, total_page, *labels, *info, *audios, *waveplots],
         )
 
