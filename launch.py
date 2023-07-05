@@ -72,8 +72,9 @@ def trim(vocal: str, start: float, end: float, slice: str, bitrate: str):
     )
 
 
-def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
-    msg("Search", "Get Waveplot", file=file)
+def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str = ""):
+    if file:
+        msg("Search", "Get Waveplot", file=file)
     time_axis = []
     samples = []
     for i in range(0, len(waveform), 100):
@@ -81,7 +82,7 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
         samples.append(waveform[i : i + 100].max())
         time_axis.append((i + 50) / sample_rate)
         samples.append(waveform[i : i + 100].min())
-    fig = plt.figure(figsize=(20, 1), facecolor="black")
+    fig = plt.figure(figsize=(20, 1), facecolor="black", dpi=48)
     plt.plot(time_axis, samples, color="white")
     plt.xlim(min(time_axis), max(time_axis))
     amp = max(abs(min(samples)), abs(max(samples)))
@@ -90,41 +91,32 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str):
     return fig
 
 
-def load_slice(base_name: str, start: float, end: float) -> tuple[np.ndarray, int, Figure]:
-    vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
-    slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
-    wav = os.path.join(TMP_DIR, f"{base_name}_{start:.0f}_{end:.0f}.wav")
-    waveform = torch.zeros((1, 44100))
-    sample_rate = 44100
-
-    exists = False
+def load_slice(base_name: str, start: float, end: float) -> tuple[str | None, str | None]:
+    slice = os.path.join(SLICE_DIR, base_name, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
+    waveplot = slice.replace(".mp3", ".jpg")
+    # check if slice exists and valid
     try:
         if abs(start + get_duration(slice) - end) < 2:
-            exists = True
-    except:
-        pass
-
-    try:
-        if exists:
-            # load existing slice if it's valid
-            msg("Search", "Loading", file=slice)
-            ffmpeg.input(slice).output(wav).run(overwrite_output=True, quiet=True)
-            waveform, sample_rate = torchaudio.load(wav)  # type: ignore
-            os.remove(wav)
+            pass
         else:
-            # else trim vocal
-            msg("Search", "Trimming", file=slice)
-            ffmpeg.input(vocal).output(wav, ss=start, to=end).run(overwrite_output=True, quiet=True)
-            time.sleep(1)
-            waveform, sample_rate = torchaudio.load(wav)  # type: ignore
-            os.remove(wav)
-            torchaudio.save(slice, waveform, sample_rate)  # type: ignore
-    except Exception as e:
-        msg("Search", type(e).__name__, str(e), file=slice, error=True)
+            slice = "placeholder_slice.mp3"
+    except:
+        slice = "placeholder_slice.mp3"
+    # check if waveplot exists
+    try:
+        if os.path.exists(waveplot):
+            pass
+        else:
+            waveplot = "placeholder_waveplot.jpg"
+    except:
+        waveplot = "placeholder_waveplot.jpg"
+    # print message
+    if slice:
+        msg("Search", "Slice Loaded", file=slice)
+    if waveplot:
+        msg("Search", "Plot Loaded", file=waveplot)
 
-    arr = np.array(waveform.numpy().T * 2**15, dtype=np.int16)
-    assert len(arr.shape) == 2
-    return arr, sample_rate, get_waveplot(arr.mean(axis=1), sample_rate, slice)
+    return slice, waveplot
 
 
 def search(
@@ -139,8 +131,8 @@ def search(
 ):
     labels: list[str | None] = [None] * MAX_SLICE_NUM
     info: list[tuple | None] = [None] * MAX_SLICE_NUM
-    slices: list[tuple | None] = [None] * MAX_SLICE_NUM
-    waveplots: list[Figure | None] = [None] * MAX_SLICE_NUM
+    slices: list[str | None] = [None] * MAX_SLICE_NUM
+    waveplots: list[str | None] = [None] * MAX_SLICE_NUM
     # filter transcript by roomid
     if roomid != "all":
         transcript = transcript[transcript["roomid"] == roomid]
@@ -186,35 +178,10 @@ def search(
         s = base_name.split("_")[1]
         date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
         labels[i] = f"# [{base_name.split('_')[0]}] {date} {text}"
-        slice_file = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
-        if "Audio" in options or os.path.exists(slice_file):
-            info[i] = (base_name, start, end, text)
+        slice, waveplot = load_slice(base_name, start, end)
+        slices[i] = slice
+        waveplots[i] = waveplot
         i += 1
-
-    # load slices in parallel
-    def work(idx: int, arg: tuple[str, float, float, str], queue: Queue) -> None:
-        wave_arr, sample_rate, waveplot = load_slice(arg[0], arg[1], arg[2])
-        queue.put((idx, (wave_arr, sample_rate, waveplot)))
-
-    processes: list[Process | None] = []
-    queue = Queue()
-    for arg in info:
-        if arg:
-            p = Process(target=work, args=(len(processes), arg, queue))
-            p.start()
-            processes.append(p)
-        else:
-            processes.append(None)
-    # wait for all processes to finish if join is needed
-    for p in processes:
-        if p:
-            idx, res = queue.get()
-            wave_arr, sample_rate, waveplot = res
-            slices[idx] = (sample_rate, wave_arr)
-            waveplots[idx] = waveplot
-    for p in processes:
-        if p:
-            p.join()
 
     return page, total_page, *labels, *info, *slices, *waveplots
 
@@ -249,10 +216,12 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
         msg("Cache", "Saving", file=path)
         torchaudio.save(path, waveform, sample_rate)  # type: ignore
+        fig = get_waveplot(waveform.numpy().T, sample_rate)
+        fig.savefig(path.replace(".mp3", ".jpg"))
 
     msg("Search", "Caching All Slices", "This may take a long long while")
-    # num_proc = torch.multiprocessing.cpu_count()
-    num_proc = 4
+    num_proc = torch.multiprocessing.cpu_count()
+    # num_proc = 1
     processes: list[Process | None] = [None] * num_proc
     skip_list = []
     VALIDLIST = os.path.join(TMP_DIR, "valid_slices.txt")
@@ -263,6 +232,9 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         pass
     for base_name in transcript["basename"].unique():
         vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
+        slice_dir = os.path.join(SLICE_DIR, base_name)
+        if not os.path.exists(slice_dir):
+            os.makedirs(slice_dir)
         # skip if already cached
         msg("Cache", "Checking", file=vocal)
         # check valid list
@@ -273,8 +245,8 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         for _, row in transcript[transcript["basename"] == base_name].iterrows():
             start = max(row["start"] - margin, 0)
             end = row["end"] + margin
-            slice = os.path.join(SLICE_DIR, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
-            if not os.path.exists(slice):
+            slice = os.path.join(slice_dir, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
+            if not os.path.exists(slice) or not os.path.exists(slice.replace(".mp3", ".jpg")):
                 rows.append((start, end, slice))
         if not rows:
             with open(VALIDLIST, "a") as f:
@@ -310,7 +282,7 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
                         break
                 if done:
                     break
-                time.sleep(0.1)
+                time.sleep(0.01)
         try:
             os.remove(wav)
         except:
@@ -378,13 +350,8 @@ if __name__ == "__main__":
                     with gr.Row():
                         with gr.Column(scale=100):
                             info.append(gr.State(None))
-                            audios.append(
-                                gr.Audio(
-                                    show_label=False,
-                                    interactive=False,
-                                )
-                            )
-                            waveplots.append(gr.Plot(show_label=False))
+                            audios.append(gr.Audio(show_label=False, interactive=False))
+                            waveplots.append(gr.Image(show_label=False, interactive=False))
                         favorite.append(gr.Button(value="Save to Favorites").style(size="sm"))
                 with gr.Row():
                     backward = gr.Button(value="< Previous")
