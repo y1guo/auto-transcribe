@@ -203,11 +203,11 @@ def valid(base_name: str, target: str) -> bool:
         with open(file) as f:
             data = json.load(f)
             segments = data["segments"]
-            max_time = 0
+            last_start = 0
             if segments:
-                max_time = segments[-1]["end"]
-            msg("DEBUG", "max_time", str(max_time) + "   " + str(compare), file=file)
-            if max_time > compare + 2:
+                last_start = segments[-1]["start"]
+            msg("DEBUG", "last_start", str(last_start) + "   " + str(compare), file=file)
+            if last_start >= compare:
                 return False
         # check if the vocal file is modified after transcription
         if os.path.getmtime(vocal) > os.path.getmtime(file):
