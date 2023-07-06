@@ -216,8 +216,12 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
         msg("Cache", "Saving", file=path)
         torchaudio.save(path, waveform, sample_rate)  # type: ignore
-        fig = get_waveplot(waveform.numpy().T, sample_rate)
-        fig.savefig(path.replace(".mp3", ".jpg"))
+        try:
+            fig = get_waveplot(waveform.numpy().T, sample_rate)
+            fig.savefig(path.replace(".mp3", ".jpg"))
+        except ValueError:
+            print("waveform:", waveform)
+            raise
 
     msg("Search", "Caching All Slices", "This may take a long long while")
     num_proc = torch.multiprocessing.cpu_count()
@@ -268,6 +272,10 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
             waveform, sample_rate = torchaudio.load(wav)  # type: ignore
         # save slices
         for start, end, slice in rows:
+            # debug start
+            if waveform[:, int(start * sample_rate) : int(end * sample_rate)].nelement() == 0:
+                print("empty waveform:", slice)
+            # debug end
             done = False
             while True:
                 for i, p in enumerate(processes):
@@ -337,7 +345,7 @@ if __name__ == "__main__":
                     label="Options",
                 )
                 margin = gr.Number(
-                    value=1,
+                    value=2,
                     label="Audio Margin (seconds)",
                 )
                 date_from = gr.Number(value=20220101, label="Date From", precision=0)

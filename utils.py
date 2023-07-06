@@ -100,14 +100,8 @@ def get_audio_parts(bare_name: str) -> dict[str, float]:
         audio_parts = {os.path.join(AUDIO_DIR, f"{bare_name}.m4a"): video_duration}
     else:
         audio_parts = {
-            os.path.join(AUDIO_DIR, f"{bare_name}_part_{1+i:02d}.m4a"): PART_DURATION
-            for i in range(num_part - 1)
-        } | {
-            os.path.join(
-                AUDIO_DIR, f"{bare_name}_part_{num_part:02d}.m4a"
-            ): video_duration
-            % PART_DURATION
-        }
+            os.path.join(AUDIO_DIR, f"{bare_name}_part_{1+i:02d}.m4a"): PART_DURATION for i in range(num_part - 1)
+        } | {os.path.join(AUDIO_DIR, f"{bare_name}_part_{num_part:02d}.m4a"): video_duration % PART_DURATION}
     return audio_parts
 
 
@@ -203,6 +197,21 @@ def valid(base_name: str, target: str) -> bool:
         #     error=True,
         # )
         return False
+    # additional check for transcript
+    if target == "transcript":
+        # check if the last segment exceeds the video duration
+        with open(file) as f:
+            data = json.load(f)
+            segments = data["segments"]
+            max_time = 0
+            if segments:
+                max_time = segments[-1]["end"]
+            msg("DEBUG", "max_time", str(max_time) + "   " + str(compare), file=file)
+            if max_time > compare + 2:
+                return False
+        # check if the vocal file is modified after transcription
+        if os.path.getmtime(vocal) > os.path.getmtime(file):
+            return False
     # add to valid list
     with open(VALIDLIST, "a") as f:
         if target in ["audio"]:
