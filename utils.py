@@ -180,7 +180,7 @@ def valid(base_name: str, target: str) -> bool:
         else:
             file = transcript
             compare = video_duration
-            threshold = 600
+            threshold = 300
             sender = "Transcribe"
     # validate
     try:
@@ -199,16 +199,6 @@ def valid(base_name: str, target: str) -> bool:
         return False
     # additional check for transcript
     if target == "transcript":
-        # check if the last segment exceeds the video duration
-        with open(file) as f:
-            data = json.load(f)
-            segments = data["segments"]
-            last_start = 0
-            if segments:
-                last_start = segments[-1]["start"]
-            msg("DEBUG", "last_start", str(last_start) + "   " + str(compare), file=file)
-            if last_start >= compare:
-                return False
         # check if the vocal file is modified after transcription
         if os.path.getmtime(vocal) > os.path.getmtime(file):
             return False
