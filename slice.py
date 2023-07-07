@@ -2,7 +2,7 @@ import os, time, torch, torchaudio, pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from multiprocessing import Process
+from multiprocessing import Pool
 from utils import (
     VOCAL_DIR,
     SLICE_DIR,
@@ -78,7 +78,6 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     msg("Search", "Caching All Slices", "This may take a long long while")
     num_proc = torch.multiprocessing.cpu_count()
     # num_proc = 1
-    processes: list[Process | None] = [None] * num_proc
     skip_list = []
     VALIDLIST = os.path.join(TMP_DIR, "valid_slices.txt")
     try:
@@ -112,26 +111,15 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         msg("Cache", "Loading", file=vocal)
         waveform, sample_rate = torchaudio.load(vocal)  # type: ignore
         # save slices
+        args = []
         for start, end, slice in rows:
             # debug start
             if waveform[:, int(start * sample_rate) : int(end * sample_rate)].nelement() == 0:
                 print("empty waveform:", slice)
             # debug end
-            done = False
-            while True:
-                for i, p in enumerate(processes):
-                    if not p or not p.is_alive():
-                        p = Process(
-                            target=save_slice,
-                            args=(waveform[:, int(start * sample_rate) : int(end * sample_rate)], sample_rate, slice),
-                        )
-                        p.start()
-                        processes[i] = p
-                        done = True
-                        break
-                if done:
-                    break
-                time.sleep(0.01)
+            args.append((waveform[:, int(start * sample_rate) : int(end * sample_rate)], sample_rate, slice))
+        with Pool(num_proc) as p:
+            p.starmap(save_slice, args)
     msg("Cache", "Done")
 
 
