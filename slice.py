@@ -1,4 +1,4 @@
-import os, time, torch, torchaudio, pickle
+import os, torch, torchaudio, pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -36,7 +36,9 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str = ""):
     return fig
 
 
-def load_slice(base_name: str, start: float, end: float) -> tuple[str | None, str | None]:
+def load_slice(
+    base_name: str, start: float, end: float
+) -> tuple[str | None, str | None]:
     slice = os.path.join(SLICE_DIR, base_name, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
     waveplot = slice.replace(".mp3", ".jpg")
     # check if slice exists and valid
@@ -64,17 +66,19 @@ def load_slice(base_name: str, start: float, end: float) -> tuple[str | None, st
     return slice, waveplot
 
 
-def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
-    def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
-        msg("Cache", "Saving", file=path)
-        torchaudio.save(path, waveform, sample_rate)  # type: ignore
-        try:
-            fig = get_waveplot(waveform.numpy().T, sample_rate)
-            fig.savefig(path.replace(".mp3", ".jpg"))
-        except ValueError:
-            print("waveform:", waveform)
-            raise
+def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
+    msg("Cache", "Saving", file=path)
+    torchaudio.save(path, waveform, sample_rate)  # type: ignore
+    try:
+        fig = get_waveplot(waveform.numpy().T, sample_rate)
+        fig.savefig(path.replace(".mp3", ".jpg"))
+        plt.close(fig)
+    except ValueError:
+        print("waveform:", waveform)
+        raise
 
+
+def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     msg("Search", "Caching All Slices", "This may take a long long while")
     num_proc = torch.multiprocessing.cpu_count()
     # num_proc = 1
@@ -101,7 +105,9 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
             start = max(row["start"] - margin, 0)
             end = row["end"] + margin
             slice = os.path.join(slice_dir, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
-            if not os.path.exists(slice) or not os.path.exists(slice.replace(".mp3", ".jpg")):
+            if not os.path.exists(slice) or not os.path.exists(
+                slice.replace(".mp3", ".jpg")
+            ):
                 rows.append((start, end, slice))
         if not rows:
             with open(VALIDLIST, "a") as f:
@@ -114,10 +120,21 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         args = []
         for start, end, slice in rows:
             # debug start
-            if waveform[:, int(start * sample_rate) : int(end * sample_rate)].nelement() == 0:
+            if (
+                waveform[
+                    :, int(start * sample_rate) : int(end * sample_rate)
+                ].nelement()
+                == 0
+            ):
                 print("empty waveform:", slice)
             # debug end
-            args.append((waveform[:, int(start * sample_rate) : int(end * sample_rate)], sample_rate, slice))
+            args.append(
+                (
+                    waveform[:, int(start * sample_rate) : int(end * sample_rate)],
+                    sample_rate,
+                    slice,
+                )
+            )
         with Pool(num_proc) as p:
             p.starmap(save_slice, args)
     msg("Cache", "Done")
