@@ -1,15 +1,10 @@
-import os, json, ffmpeg, pickle, time, torch, torchaudio
+import os, json, ffmpeg, pickle
 import gradio as gr
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from multiprocessing import Process, Queue
 from pypinyin import lazy_pinyin
 from utils import (
     TRANSCRIPT_DIR,
     VOCAL_DIR,
-    SLICE_DIR,
     FAVORITE_DIR,
     TMP_DIR,
     msg,
