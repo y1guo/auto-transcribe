@@ -77,3 +77,12 @@ python launch.py
 
   If seeing warning from `numba` about some deprecated usage when importing or calling `whisper`, downgrading to
   `numba==0.56.4` solves the problem.
+
+- Too Many Files Opened Error
+
+  Consider increase the user opened files limit by
+
+  ```bash
+  ulimit -n 8192
+  ```
+  

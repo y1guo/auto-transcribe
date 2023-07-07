@@ -69,13 +69,9 @@ def load_slice(
 def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
     msg("Cache", "Saving", file=path)
     torchaudio.save(path, waveform, sample_rate)  # type: ignore
-    try:
-        fig = get_waveplot(waveform.numpy().T, sample_rate)
-        fig.savefig(path.replace(".mp3", ".jpg"))
-        plt.close(fig)
-    except ValueError:
-        print("waveform:", waveform)
-        raise
+    fig = get_waveplot(waveform.numpy().T, sample_rate)
+    fig.savefig(path.replace(".mp3", ".jpg"))
+    plt.close(fig)
 
 
 def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
