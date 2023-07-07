@@ -180,7 +180,7 @@ def valid(base_name: str, target: str) -> bool:
         else:
             file = transcript
             compare = video_duration
-            threshold = 300
+            threshold = 600
             sender = "Transcribe"
     # validate
     try:
