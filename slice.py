@@ -8,7 +8,6 @@ from utils import (
     SLICE_DIR,
     TMP_DIR,
     msg,
-    get_duration,
 )
 
 
@@ -34,36 +33,6 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str = ""):
         plt.ylim(-1, 1)
     plt.axis("off")
     return fig
-
-
-def load_slice(
-    base_name: str, start: float, end: float
-) -> tuple[str | None, str | None]:
-    slice = os.path.join(SLICE_DIR, base_name, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
-    waveplot = slice.replace(".mp3", ".jpg")
-    # check if slice exists and valid
-    try:
-        if abs(start + get_duration(slice) - end) < 2:
-            pass
-        else:
-            slice = "placeholder_slice.mp3"
-    except:
-        slice = "placeholder_slice.mp3"
-    # check if waveplot exists
-    try:
-        if os.path.exists(waveplot):
-            pass
-        else:
-            waveplot = "placeholder_waveplot.jpg"
-    except:
-        waveplot = "placeholder_waveplot.jpg"
-    # print message
-    if slice:
-        msg("Search", "Slice Loaded", file=slice)
-    if waveplot:
-        msg("Search", "Plot Loaded", file=waveplot)
-
-    return slice, waveplot
 
 
 def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
@@ -137,7 +106,6 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
 
 
 if __name__ == "__main__":
-    SLICE_DIR = "/home/yiguo/slice"
     with open(os.path.join(TMP_DIR, "transcript.pkl"), "rb") as f:
         transcript: pd.DataFrame = pickle.load(f)
         cache_all_slices(transcript[transcript["roomid"] == "92613"], 2)

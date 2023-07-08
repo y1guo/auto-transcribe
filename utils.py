@@ -15,7 +15,8 @@ VOCAL_DIR = os.path.join(OUT_DIR, "vocal")
 TMP_DIR = os.path.join(OUT_DIR, "tmp")
 DEMUCS_DIR = os.path.join(TMP_DIR, "htdemucs")
 TRANSCRIPT_DIR = os.path.join(OUT_DIR, "transcript")
-SLICE_DIR = os.path.join(TMP_DIR, "slice")
+# SLICE_DIR = os.path.join(TMP_DIR, "slice")
+SLICE_DIR = "/home/yiguo/slice"
 FAVORITE_DIR = os.path.join(OUT_DIR, "favorite")
 for dir in [AUDIO_DIR, VOCAL_DIR, TMP_DIR, TRANSCRIPT_DIR, SLICE_DIR, FAVORITE_DIR]:
     if not os.path.exists(dir):
@@ -100,8 +101,14 @@ def get_audio_parts(bare_name: str) -> dict[str, float]:
         audio_parts = {os.path.join(AUDIO_DIR, f"{bare_name}.m4a"): video_duration}
     else:
         audio_parts = {
-            os.path.join(AUDIO_DIR, f"{bare_name}_part_{1+i:02d}.m4a"): PART_DURATION for i in range(num_part - 1)
-        } | {os.path.join(AUDIO_DIR, f"{bare_name}_part_{num_part:02d}.m4a"): video_duration % PART_DURATION}
+            os.path.join(AUDIO_DIR, f"{bare_name}_part_{1+i:02d}.m4a"): PART_DURATION
+            for i in range(num_part - 1)
+        } | {
+            os.path.join(
+                AUDIO_DIR, f"{bare_name}_part_{num_part:02d}.m4a"
+            ): video_duration
+            % PART_DURATION
+        }
     return audio_parts
 
 

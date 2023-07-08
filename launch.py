@@ -7,10 +7,10 @@ from utils import (
     VOCAL_DIR,
     FAVORITE_DIR,
     TMP_DIR,
+    SLICE_DIR,
     msg,
     get_duration,
 )
-from slice import load_slice, cache_all_slices
 
 
 MAX_SLICE_NUM = 6
@@ -68,6 +68,36 @@ def trim(vocal: str, start: float, end: float, slice: str, bitrate: str):
     )
 
 
+def load_slice(
+    base_name: str, start: float, end: float
+) -> tuple[str | None, str | None]:
+    slice = os.path.join(SLICE_DIR, base_name, f"{base_name}_{start:.0f}_{end:.0f}.mp3")
+    waveplot = slice.replace(".mp3", ".jpg")
+    # check if slice exists and valid
+    try:
+        if abs(start + get_duration(slice) - end) < 2:
+            pass
+        else:
+            slice = "placeholder_slice.mp3"
+    except:
+        slice = "placeholder_slice.mp3"
+    # check if waveplot exists
+    try:
+        if os.path.exists(waveplot):
+            pass
+        else:
+            waveplot = "placeholder_waveplot.jpg"
+    except:
+        waveplot = "placeholder_waveplot.jpg"
+    # print message
+    if slice:
+        msg("Search", "Slice Loaded", file=slice)
+    if waveplot:
+        msg("Search", "Plot Loaded", file=waveplot)
+
+    return slice, waveplot
+
+
 def search(
     transcript: pd.DataFrame,
     roomid: str,
@@ -100,7 +130,9 @@ def search(
     else:
         for k in keyword.split():
             if "Pinyin" in options:
-                transcript = transcript[transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))]
+                transcript = transcript[
+                    transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))
+                ]
             else:
                 transcript = transcript[transcript["text"].str.contains(k)]
 
@@ -145,7 +177,9 @@ def prev_page(
     margin: float,
     page: int,
 ):
-    return search(transcript, roomid, date_from, date_to, keyword, options, margin, page - 1)
+    return search(
+        transcript, roomid, date_from, date_to, keyword, options, margin, page - 1
+    )
 
 
 def next_page(
@@ -158,13 +192,17 @@ def next_page(
     margin: float,
     page: int,
 ):
-    return search(transcript, roomid, date_from, date_to, keyword, options, margin, page + 1)
+    return search(
+        transcript, roomid, date_from, date_to, keyword, options, margin, page + 1
+    )
 
 
 def save_to_favorite(info: tuple[str, float, float, str]) -> str:
     base_name, start, end, text = info
     vocal = os.path.join(VOCAL_DIR, f"{base_name}.mp3")
-    favorite = os.path.join(FAVORITE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3")
+    favorite = os.path.join(
+        FAVORITE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3"
+    )
     try:
         trim(vocal, start, end, favorite, "320k")
     except FileNotFoundError:
@@ -195,8 +233,9 @@ if __name__ == "__main__":
         with gr.Row():
             with gr.Column():
                 refresh = gr.Button(value="Refresh Transcripts")
-                cache = gr.Button(value="Cache All Slices")
-                status = gr.Textbox(value=init_status, label="Status", interactive=False)
+                status = gr.Textbox(
+                    value=init_status, label="Status", interactive=False
+                )
                 roomid = gr.Dropdown(
                     choices=["all"] + sorted(df["roomid"].unique().tolist()),
                     label="Room ID",
@@ -222,12 +261,18 @@ if __name__ == "__main__":
                         with gr.Column(scale=100):
                             info.append(gr.State(None))
                             audios.append(gr.Audio(show_label=False, interactive=False))
-                            waveplots.append(gr.Image(show_label=False, interactive=False))
-                        favorite.append(gr.Button(value="Save to Favorites").style(size="sm"))
+                            waveplots.append(
+                                gr.Image(show_label=False, interactive=False)
+                            )
+                        favorite.append(
+                            gr.Button(value="Save to Favorites").style(size="sm")
+                        )
                 with gr.Row():
                     backward = gr.Button(value="< Previous")
                     page = gr.Number(value=0, label="Page", precision=0)
-                    total_page = gr.Number(value=0, label="Total", precision=0, interactive=False)
+                    total_page = gr.Number(
+                        value=0, label="Total", precision=0, interactive=False
+                    )
                     forward = gr.Button(value="Next >")
 
         keyword.submit(
@@ -262,8 +307,6 @@ if __name__ == "__main__":
 
         for i in range(MAX_SLICE_NUM):
             favorite[i].click(save_to_favorite, info[i], status)
-
-        cache.click(cache_all_slices, [transcript, margin])
 
         refresh.click(refresh_transcript, outputs=[transcript, status])
 
