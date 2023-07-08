@@ -159,6 +159,7 @@ def search(
         s = base_name.split("_")[1]
         date = s[:4] + "/" + s[4:6] + "/" + s[6:8]
         labels[i] = f"# [{base_name.split('_')[0]}] {date} {text}"
+        info[i] = (base_name, start, end, text)
         slice, waveplot = load_slice(base_name, start, end)
         slices[i] = slice
         waveplots[i] = waveplot
@@ -229,7 +230,7 @@ if __name__ == "__main__":
         waveplots = []
         favorite = []
 
-        gr.Markdown("""# <center>Auto-Transcribe</center>""")
+        # gr.Markdown("""# <center>Auto-Transcribe</center>""")
         with gr.Row():
             with gr.Column():
                 refresh = gr.Button(value="Refresh Transcripts")
