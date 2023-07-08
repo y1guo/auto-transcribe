@@ -83,6 +83,6 @@ python launch.py
   Consider increase the user opened files limit by
 
   ```bash
-  ulimit -n 8192
+  ulimit -n 1000000
   ```
   

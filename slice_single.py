@@ -2,7 +2,6 @@ import os, torch, torchaudio, pickle
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from multiprocessing import Pool
 from utils import (
     VOCAL_DIR,
     SLICE_DIR,
@@ -76,8 +75,8 @@ def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
 
 def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
     msg("Search", "Caching All Slices", "This may take a long long while")
-    num_proc = torch.multiprocessing.cpu_count()
-    # num_proc = 1
+    # num_proc = torch.multiprocessing.cpu_count()
+    num_proc = 1
     skip_list = []
     VALIDLIST = os.path.join(TMP_DIR, "valid_slices.txt")
     try:
@@ -131,13 +130,15 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
                     slice,
                 )
             )
-        with Pool(num_proc) as p:
-            p.starmap(save_slice, args)
+        # with Pool(num_proc) as p:
+        #     p.starmap(save_slice, args)
+        msg("Cache", "Found", f"{len(args)} slices", file=vocal)
+        for arg in args:
+            save_slice(*arg)
     msg("Cache", "Done")
 
 
 if __name__ == "__main__":
-    SLICE_DIR = "/home/yiguo/slice"
     with open(os.path.join(TMP_DIR, "transcript.pkl"), "rb") as f:
         transcript: pd.DataFrame = pickle.load(f)
         cache_all_slices(transcript[transcript["roomid"] == "92613"], 2)
