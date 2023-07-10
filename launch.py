@@ -36,7 +36,7 @@ def load_transcript(refresh: bool = False) -> tuple[pd.DataFrame, str]:
                         tmp["basename"].append(base_name)
                         tmp["start"].append(segment["start"])
                         tmp["end"].append(segment["end"])
-                        tmp["text"].append(segment["text"])
+                        tmp["text"].append(segment["text"].lower())
                         tmp["pinyin"].append(" ".join(lazy_pinyin(segment["text"])))
         transcript = pd.DataFrame(tmp)
         with open(os.path.join(TMP_DIR, "transcript.pkl"), "wb") as f:
@@ -134,7 +134,7 @@ def search(
                     transcript["pinyin"].str.contains(" ".join(lazy_pinyin(k)))
                 ]
             else:
-                transcript = transcript[transcript["text"].str.contains(k)]
+                transcript = transcript[transcript["text"].str.contains(k.lower())]
 
     # filter transcript by date
     def date_filter(base_name: str) -> bool:
