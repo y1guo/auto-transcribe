@@ -115,6 +115,13 @@ def search(
     # filter transcript by roomid
     if roomid != "all":
         transcript = transcript[transcript["roomid"] == roomid]
+
+    # filter transcript by date
+    def date_filter(base_name: str) -> bool:
+        date = int(base_name.split("_")[1])
+        return date_from <= date <= date_to
+
+    transcript = transcript[transcript["basename"].apply(date_filter)]
     # filter transcript by keywords, allow multiple keywords separated by space, use "" for exact match
     if (
         keyword.startswith('"')
@@ -126,7 +133,12 @@ def search(
         or keyword.startswith("‘")
         and keyword.endswith("’")
     ):
-        transcript = transcript[transcript["text"] == keyword[1:-1]]
+        if "Pinyin" in options:
+            transcript = transcript[
+                transcript["pinyin"] == " ".join(lazy_pinyin(keyword[1:-1]))
+            ]
+        else:
+            transcript = transcript[transcript["text"] == keyword[1:-1]]
     else:
         for k in keyword.split():
             if "Pinyin" in options:
@@ -135,13 +147,6 @@ def search(
                 ]
             else:
                 transcript = transcript[transcript["text"].str.contains(k.lower())]
-
-    # filter transcript by date
-    def date_filter(base_name: str) -> bool:
-        date = int(base_name.split("_")[1])
-        return date_from <= date <= date_to
-
-    transcript = transcript[transcript["basename"].apply(date_filter)]
     # reset index
     transcript = transcript.reset_index(drop=True)
     # regulate page number
