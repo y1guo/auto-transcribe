@@ -122,23 +122,21 @@ def search(
         return date_from <= date <= date_to
 
     transcript = transcript[transcript["basename"].apply(date_filter)]
-    # filter transcript by keywords, allow multiple keywords separated by space, use "" for exact match
-    if (
-        keyword.startswith('"')
-        and keyword.endswith('"')
-        or keyword.startswith("'")
-        and keyword.endswith("'")
-        or keyword.startswith("“")
-        and keyword.endswith("”")
-        or keyword.startswith("‘")
-        and keyword.endswith("’")
-    ):
+    # filter transcript by keywords, allow multiple keywords separated by space
+    if "Exact Match" in options:  # exact match
         if "Pinyin" in options:
             transcript = transcript[
-                transcript["pinyin"] == " ".join(lazy_pinyin(keyword[1:-1]))
+                transcript["pinyin"] == " ".join(lazy_pinyin(keyword))
             ]
         else:
-            transcript = transcript[transcript["text"] == keyword[1:-1]]
+            transcript = transcript[transcript["text"] == keyword.lower()]
+    elif "Ends With" in options:  # ends with
+        if "Pinyin" in options:
+            transcript = transcript[
+                transcript["pinyin"].str.endswith(" ".join(lazy_pinyin(keyword)))
+            ]
+        else:
+            transcript = transcript[transcript["text"].str.endswith(keyword.lower())]
     else:
         for k in keyword.split():
             if "Pinyin" in options:
@@ -248,7 +246,7 @@ if __name__ == "__main__":
                     value="all",
                 )
                 options = gr.CheckboxGroup(
-                    choices=["Audio", "Pinyin"],
+                    choices=["Audio", "Pinyin", "Exact Match", "Ends With"],
                     value=["Audio"],
                     label="Options",
                 )
