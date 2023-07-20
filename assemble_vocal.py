@@ -1,4 +1,4 @@
-import os, time, ffmpeg
+import os, time, ffmpeg, torchaudio
 from utils import (
     VOCAL_DIR,
     TMP_DIR,
@@ -27,21 +27,27 @@ def assemble_vocal(file: str) -> None:
         valid(os.path.splitext(os.path.basename(f))[0], "demucs") for f in audio_parts
     ) or valid(base_name, "vocal"):
         return
-    # assemble from wav in tmp dir to mp3 in vocal dir
-    TMP_FILE = os.path.join(TMP_DIR, "filelist.txt")
-    with open(TMP_FILE, "w") as f:
-        for wav_part in wav_parts:
-            f.write(f"file '{wav_part}'\n")
+    # start assembling
     msg(
         "Vocal",
         "Assembling",
         file=vocal,
     )
     start_time = time.time()
+    # assemble from wav in tmp dir to mp3 in vocal dir
+    TMP_FILE = os.path.join(TMP_DIR, "filelist.txt")
+    with open(TMP_FILE, "w") as f:
+        for wav_part in wav_parts:
+            mp3_part = wav_part[:-4] + ".mp3"
+            wav, sr = torchaudio.load(wav_part)  # type: ignore
+            torchaudio.save(mp3_part, wav, sr, compression=-1.5)  # type: ignore
+            f.write(f"file '{mp3_part}'\n")
+    time.sleep(1)
+    # concat mp3 parts
     try:
-        ffmpeg.input(TMP_FILE, format="concat", safe=0).output(vocal, ab="320k").run(
-            overwrite_output=True, quiet=True
-        )
+        ffmpeg.input(TMP_FILE, format="concat", safe=0).output(
+            vocal, acodec="copy"
+        ).run(overwrite_output=True, quiet=True)
     except (Exception, KeyboardInterrupt) as e:
         try:
             os.remove(vocal)

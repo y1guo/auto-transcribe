@@ -37,7 +37,7 @@ def get_waveplot(waveform: np.ndarray, sample_rate: int, file: str = ""):
 
 def save_slice(waveform: torch.Tensor, sample_rate: int, path: str) -> None:
     msg("Cache", "Saving", file=path)
-    torchaudio.save(path, waveform, sample_rate)  # type: ignore
+    torchaudio.save(path, waveform, sample_rate, compression=-9.5)  # type: ignore
     fig = get_waveplot(waveform.numpy().T, sample_rate)
     fig.savefig(path.replace(".mp3", ".jpg"))
     plt.close(fig)
@@ -108,6 +108,4 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
 if __name__ == "__main__":
     with open(os.path.join(TMP_DIR, "transcript.pkl"), "rb") as f:
         transcript: pd.DataFrame = pickle.load(f)
-        cache_all_slices(transcript[transcript["roomid"] == "92613"], 2)
-        cache_all_slices(transcript[transcript["roomid"] == "47867"], 2)
         cache_all_slices(transcript, 2)

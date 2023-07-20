@@ -1,31 +1,5 @@
 {
-  "video_dir_list": [
-    "/mnt/f/remuxed",
-    "/mnt/e/BiliRec_apixC/downloads",
-    "/mnt/f/uncategorized",
-    "/mnt/e/ApixC_footages/apixC_MC暮色/footages",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/broken",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230329",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230330",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230331",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230401",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230402",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230403",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230404",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230405",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230406",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230407",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230408",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230409",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230410",
-    "/mnt/e/ApixC_footages/apixC_MC终末旅行/footages/20230411",
-    "/mnt/e/ApixC_footages/apixC_末日合集/footages",
-    "/mnt/e/ApixC_footages/apixC_回家的诱惑/footages",
-    "/mnt/e/ApixC_footages/apixC_triple_dating/footages/",
-    "/mnt/e/BiliRec_apixC/saved",
-    "/mnt/e/BiliRec_apixC/uncategorized",
-    "/mnt/e/BiliRec_apixC/素材录播"
-  ],
+  "video_dir_list": ["/mnt/e/uncategorized"],
   "out_dir": "/mnt/d/Videos/ApixC/transcription",
   "part_duration": 3600
 }

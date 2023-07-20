@@ -86,3 +86,9 @@ python launch.py
   ulimit -n 1000000
   ```
   
+
+## To-do
+
+-   Reduce vocal bitrate, changed to variable bitrate
+
+-   Reduce slice bitrate

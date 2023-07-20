@@ -51,7 +51,7 @@ def refresh_transcript() -> tuple[pd.DataFrame, str]:
     return load_transcript(refresh=True)
 
 
-def trim(vocal: str, start: float, end: float, slice: str, bitrate: str):
+def trim(vocal: str, start: float, end: float, slice: str):
     # skip if slice already exists
     try:
         if abs(start + get_duration(slice) - end) < 1:
@@ -60,7 +60,7 @@ def trim(vocal: str, start: float, end: float, slice: str, bitrate: str):
         pass
     return (
         ffmpeg.input(vocal)
-        .output(slice, ss=start, to=end, ab=bitrate)
+        .output(slice, ss=start, to=end, acodec="copy")
         .run_async(overwrite_output=True, quiet=True)
         # ffmpeg.input(vocal, ss=start, to=end)
         # .output(slice, ab=bitrate)
@@ -208,7 +208,7 @@ def save_to_favorite(info: tuple[str, float, float, str]) -> str:
         FAVORITE_DIR, f"{base_name}_{start:.0f}_{end:.0f}_{text}.mp3"
     )
     try:
-        trim(vocal, start, end, favorite, "320k")
+        trim(vocal, start, end, favorite)
     except FileNotFoundError:
         msg("Search", "Not Found", file=vocal, error=True)
         return f"Not Found {vocal}"
