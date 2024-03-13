@@ -6,14 +6,14 @@ Server Pipeline that Transcribes Videos on Detection Unattended
 
 ```bash
 # create a new virtual environment
-conda create -n auto-transcribe python=3.10
+conda create -n auto-transcribe python=3.11 -y
 conda activate auto-transcribe
 
 # install dependencies
 pip install -r requirements.txt
 
-# install ffmpeg from conda
-conda install -c pytorch ffmpeg
+# optional: install ffmpeg from conda
+conda install -c conda-forge ffmpeg
 ```
 
 ## Workflow
