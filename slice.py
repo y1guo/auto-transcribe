@@ -84,18 +84,26 @@ def cache_all_slices(transcript: pd.DataFrame, margin: float) -> None:
         # save slices
         args = []
         for start, end, slice in rows:
+            # sanity check
+            start_frame = int(start * sample_rate)
+            end_frame = int(end * sample_rate)
+            if start_frame > waveform.shape[1]:
+                msg(
+                    "Slice",
+                    "Warning",
+                    f"Skipping start = {start:.0f} > duration",
+                    file=slice,
+                )
+                continue
+            if end_frame > waveform.shape[1]:
+                end_frame = waveform.shape[1]
             # debug start
-            if (
-                waveform[
-                    :, int(start * sample_rate) : int(end * sample_rate)
-                ].nelement()
-                == 0
-            ):
+            if waveform[:, start_frame : end_frame + 1].nelement() == 0:
                 print("empty waveform:", slice)
             # debug end
             args.append(
                 (
-                    waveform[:, int(start * sample_rate) : int(end * sample_rate)],
+                    waveform[:, start_frame : end_frame + 1],
                     sample_rate,
                     slice,
                 )

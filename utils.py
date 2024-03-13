@@ -3,10 +3,20 @@ from colorama import Fore
 from math import ceil
 
 
+def find_all_dir(dir: str):
+    """traverse the directory recursively and return the list of all subdirectories"""
+    dir_list = []
+    for root, dirs, files in os.walk(dir):
+        dir_list.append(root)
+    return dir_list
+
+
 # load config
 with open("config.json") as f:
     config = json.load(f)
-VIDEO_DIR_LIST = config["video_dir_list"]
+VIDEO_DIR_LIST = [
+    item for dir in config["video_dir_list"] for item in find_all_dir(dir)
+]
 OUT_DIR = config["out_dir"]
 PART_DURATION = config["part_duration"]
 # work directories

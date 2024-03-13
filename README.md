@@ -89,6 +89,13 @@ python launch.py
 
 ## To-do
 
--   Reduce vocal bitrate, changed to variable bitrate
+-   Investigate why python whisper and command line whisper give different results (python whisper gives worse results)
+    and transcript length even exceeds audio length.
 
--   Reduce slice bitrate
+## Dev
+
+-   Trying out [WhisperX](https://github.com/m-bain/whisperX) which claims to have a major speed-up.
+
+    ```bash
+    pip install git+https://github.com/m-bain/whisperx.git
+    ```

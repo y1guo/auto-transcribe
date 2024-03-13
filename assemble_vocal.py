@@ -40,6 +40,9 @@ def assemble_vocal(file: str) -> None:
         for wav_part in wav_parts:
             mp3_part = wav_part[:-4] + ".mp3"
             wav, sr = torchaudio.load(wav_part)  # type: ignore
+            # note that compression = -a.b, '-' for variable bitrate
+            # a: 1 is max bitrate, 9 is least bitrate
+            # b: 0 is least quality, 5 is best quality
             torchaudio.save(mp3_part, wav, sr, compression=-1.5)  # type: ignore
             f.write(f"file '{mp3_part}'\n")
     time.sleep(1)
