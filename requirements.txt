@@ -1,4 +1,5 @@
 demucs==4.0.1
+fastapi[all]==0.110.0
 gradio==4.21.0
 OpenCC==1.1.7
 pypinyin==0.51.0
